@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@theme {
+  /* High-fidelity color palette */
+  --color-background: oklch(0.99 0.01 240);
+  --color-primary: oklch(0.55 0.2 250);
+  --color-slate-900: oklch(0.21 0.03 264);
+  --color-glass: rgba(255, 255, 255, 0.7);
+  
+  /* Custom Radius for that modern ERP feel */
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 2.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-slate-900 antialiased;
+    /* Soft premium glow background */
+    background-image: 
+      radial-gradient(at 0% 0%, oklch(0.55 0.2 250 / 0.03) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, oklch(0.55 0.2 250 / 0.02) 0px, transparent 50%);
+    min-height: 100vh;
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* The "Novapex Card" - Master Class */
+  .glass-panel {
+    @apply backdrop-blur-xl bg-white/80 border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-500 rounded-[32px];
+  }
+
+  .btn-primary {
+    @apply bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] py-4 px-8 rounded-2xl transition-all active:scale-95 hover:bg-blue-600 shadow-lg shadow-slate-200;
+  }
+
+  .input-field {
+    @apply w-full bg-white border border-slate-200 rounded-[20px] px-6 py-4 text-sm font-bold focus:ring-4 focus:ring-blue-500/10 outline-none transition-all shadow-sm;
+  }
+}
+
+/* Custom Animation Engine */
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+}
+
+/* Hide scrollbars for a cleaner "app" feel */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
