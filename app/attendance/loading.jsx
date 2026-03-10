@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
+    <div className="page-shell p-4 md:p-8 space-y-8 animate-in fade-in duration-500">
       
       {/* Header Skeleton */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">

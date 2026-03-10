@@ -20,7 +20,7 @@ export default function SystemSettingsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 md:p-10 text-slate-900">
+    <div className="page-shell p-6 md:p-10 text-slate-900">
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}

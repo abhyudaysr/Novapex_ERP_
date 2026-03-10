@@ -30,7 +30,7 @@ export default function CompanySettingsPage() {
   const labelStyles = "block text-[11px] font-black uppercase tracking-widest text-slate-400 mb-2 ml-1"
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="page-shell p-8">
       <div className="max-w-6xl mx-auto">
         
         {/* Header Section */}

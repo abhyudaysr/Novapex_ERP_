@@ -1,28 +1,20 @@
-import { NextResponse } from "next/server";
-import connectDB from "@/lib/mongodb";
-import User from "@/models/User";
+import { NextResponse } from "next/server"
+import { getUserRepository } from "@/lib/data/user-repository"
+import { isMySqlConfigured } from "@/lib/mysql/client"
 
 export async function GET() {
-  try {
-    // 1. Try to connect to the database
-    await connectDB();
+  const repository = getUserRepository()
+  const health = await repository.health()
 
-    // 2. Try to create a dummy user
-    const testUser = await User.create({
-      name: "Test Connection",
-      email: `test-${Math.random()}@novapex.com`,
-      role: "employee",
-      dept: "Testing"
-    });
-
-    return NextResponse.json({ 
-      message: "Database Connected Successfully!", 
-      userCreated: testUser 
-    });
-  } catch (error: any) {
-    return NextResponse.json({ 
-      message: "Connection Failed", 
-      error: error.message 
-    }, { status: 500 });
-  }
+  return NextResponse.json({
+    provider: repository.provider,
+    ...health,
+    mysqlConfigured: isMySqlConfigured(),
+    migration: {
+      mongoRemoved: true,
+      mysqlImplemented: true,
+      tenantScopedAuth: true,
+      leaveWorkflowApi: true,
+    },
+  })
 }

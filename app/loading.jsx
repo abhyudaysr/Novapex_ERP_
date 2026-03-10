@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 md:p-10">
+    <div className="page-shell p-6 md:p-10">
       <div className="max-w-[1600px] mx-auto animate-pulse">
         
         {/* Top Navigation Skeleton */}

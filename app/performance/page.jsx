@@ -4,11 +4,12 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { PageHeader } from "@/components/page-header"
 import { 
   Target, TrendingUp, Award, Users, 
   Calendar, Star, Filter, Plus, ChevronRight,
-  ArrowUpRight, ArrowDownRight, MessageSquare, Zap
+  ArrowUpRight, Zap
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
@@ -54,33 +55,33 @@ export default function PerformancePage() {
     : recentReviews
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
+    <div className="page-shell p-8 max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
       
-      {/* Header - Role Sensitive */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black tracking-tighter text-slate-900">
-            {isEmployee ? "My Growth" : "Performance"} <span className="text-blue-600">{isEmployee ? "Dashboard" : "Hub"}</span>
-          </h1>
-          <p className="text-slate-500 font-medium">
-            {isHR ? "Holistic talent analytics and evaluation oversight." : isManager ? "Manage team evaluations and productivity." : "Track your achievements and upcoming milestones."}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          {!isEmployee && (
-            <Button variant="outline" className="h-12 rounded-xl border-slate-200 font-bold px-6">
-              <Filter className="w-4 h-4 mr-2" /> Filter
-            </Button>
-          )}
-          <Button className="bg-slate-900 hover:bg-blue-600 text-white h-12 rounded-xl font-bold px-6 shadow-lg shadow-slate-200 transition-all">
-            {isEmployee ? (
-              <><Zap className="w-4 h-4 mr-2" /> Self Assessment</>
-            ) : (
-              <><Plus className="w-4 h-4 mr-2" /> {isHR ? "New Cycle" : "Review Member"}</>
-            )}
+      <PageHeader
+        eyebrow="Talent Radar"
+        statusLabel={isEmployee ? "Personal Growth" : isManager ? "Team Reviews" : "Org Oversight"}
+        title={`${isEmployee ? "My Growth" : "Performance"} ${isEmployee ? "Dashboard" : "Hub"}`}
+        description={
+          isHR
+            ? "Holistic talent analytics and evaluation oversight."
+            : isManager
+              ? "Manage team evaluations and productivity."
+              : "Track your achievements and upcoming milestones."
+        }
+      >
+        {!isEmployee && (
+          <Button variant="outline" className="h-11 rounded-xl border-slate-200 font-bold px-5">
+            <Filter className="w-4 h-4 mr-2" /> Filter
           </Button>
-        </div>
-      </div>
+        )}
+        <Button className="bg-slate-900 hover:bg-blue-600 text-white h-11 rounded-xl font-bold px-5 shadow-lg shadow-slate-200 transition-all">
+          {isEmployee ? (
+            <><Zap className="w-4 h-4 mr-2" /> Self Assessment</>
+          ) : (
+            <><Plus className="w-4 h-4 mr-2" /> {isHR ? "New Cycle" : "Review Member"}</>
+          )}
+        </Button>
+      </PageHeader>
 
       {/* Metric Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -164,7 +165,7 @@ export default function PerformancePage() {
           <Card className="border-none bg-slate-900 rounded-[40px] p-8 text-white shadow-2xl shadow-slate-200">
             <h3 className="font-black text-xl mb-6">Quick Actions</h3>
             <div className="grid gap-4">
-              <Link href={isEmployee ? "/performance/my-goals" : "/performance/goals"}>
+              <Link href="/performance/goals">
                 <Button className="w-full justify-between h-14 bg-white/5 hover:bg-blue-600 rounded-2xl px-6 transition-all group">
                   <span className="font-bold">{isEmployee ? "Update My Goals" : "Set Team Goals"}</span>
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

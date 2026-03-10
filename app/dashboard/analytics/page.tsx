@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { PageHeader } from "@/components/page-header"
 import { useState, useEffect } from "react"
 import { 
   TrendingUp, 
@@ -14,7 +15,6 @@ import {
   GraduationCap, 
   ArrowUpRight,
   Filter,
-  User,
   Zap,
   Target,
   Award
@@ -96,19 +96,19 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="page-shell p-8 max-w-7xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       
-      {/* Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black tracking-tight text-slate-900">
-            {isEmployee ? "My Productivity" : isManager ? "Team" : "Organizational"} <span className="text-blue-600">Intelligence</span>
-          </h1>
-          <p className="text-slate-500 font-medium mt-2">
-            {isEmployee ? "Your personal performance metrics and skill growth." : "Real-time performance heuristics and health monitoring."}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-100">
+      <PageHeader
+        eyebrow="Signal Board"
+        statusLabel={isEmployee ? "Self Metrics" : isManager ? "Team View" : "Enterprise"}
+        title={`${isEmployee ? "My Productivity" : isManager ? "Team" : "Organizational"} Intelligence`}
+        description={
+          isEmployee
+            ? "Your personal performance metrics and skill growth."
+            : "Real-time performance heuristics and health monitoring."
+        }
+      >
+        <div className="section-shell flex items-center gap-2 p-1.5">
           <div className="p-2 text-slate-400"><Filter className="w-4 h-4" /></div>
           {["7d", "30d", "90d", "1y"].map((range) => (
             <Button
@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
             </Button>
           ))}
         </div>
-      </div>
+      </PageHeader>
 
       {/* High-Level Scorecards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

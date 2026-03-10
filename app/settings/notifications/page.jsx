@@ -30,7 +30,7 @@ export default function NotificationSettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 md:p-10 text-slate-900">
+    <div className="page-shell p-6 md:p-10 text-slate-900">
       <div className="max-w-6xl mx-auto">
         
         {/* Header */}

@@ -25,16 +25,18 @@ export default function SignupPage() {
 
     // Simulate Network Request
     setTimeout(() => {
-      localStorage.setItem("isLoggedIn", "true")
+      sessionStorage.setItem("isLoggedIn", "true")
+      sessionStorage.setItem("userRole", "employee")
+      sessionStorage.setItem("userName", formData.email.split("@")[0] || "New User")
       router.push("/dashboard")
     }, 1500)
   }
 
   return (
-    <div className="min-h-screen bg-white flex overflow-hidden font-sans">
+    <div className="min-h-screen flex overflow-hidden font-sans" style={{ background: "var(--surface-1)" }}>
       
       {/* Left Pane: Branding & Value Prop */}
-      <div className="hidden lg:flex lg:w-1/2 bg-slate-900 p-16 flex-col justify-between relative">
+      <div className="hidden lg:flex lg:w-1/2 p-16 flex-col justify-between relative" style={{ background: "linear-gradient(145deg, #091627 0%, #111a30 60%, #131b2f 100%)" }}>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-12">
             <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
@@ -66,19 +68,19 @@ export default function SignupPage() {
         </div>
 
         {/* Decorative background element */}
-        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-blue-600/20 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-cyan-500/20 to-transparent pointer-events-none" />
       </div>
 
       {/* Right Pane: Signup Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-16 bg-[#f8fafc]">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-16" style={{ background: "var(--surface-0)" }}>
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="w-full max-w-md"
         >
           <div className="mb-10 text-center lg:text-left">
-            <h2 className="text-4xl font-black tracking-tighter text-slate-900 mb-2">Create Account</h2>
-            <p className="text-slate-500 font-medium">Join the network and start scaling your operations.</p>
+            <h2 className="text-4xl font-black tracking-tighter mb-2" style={{ color: "var(--t1)" }}>Create Account</h2>
+            <p className="font-medium" style={{ color: "var(--t3)" }}>Join the network and start scaling your operations.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -139,7 +141,11 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-slate-900 text-white py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[11px] hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 flex items-center justify-center gap-3 group active:scale-[0.98] disabled:opacity-50"
+              className="w-full text-white py-5 rounded-[24px] font-black uppercase tracking-[0.2em] text-[11px] transition-all flex items-center justify-center gap-3 group active:scale-[0.98] disabled:opacity-50"
+              style={{
+                background: "linear-gradient(135deg, var(--accent), var(--blue))",
+                boxShadow: "var(--glow-accent)",
+              }}
             >
               {isLoading ? "Provisioning..." : "Initialize Account"}
               {!isLoading && <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />}

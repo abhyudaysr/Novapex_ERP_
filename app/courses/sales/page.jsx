@@ -63,7 +63,7 @@ export default function SalesCoursesPage() {
   const isEmployee = userRole === "employee"
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] py-16 px-6">
+    <main className="page-shell py-16 px-6">
       <div className="max-w-6xl mx-auto">
         
         {/* Header Section */}

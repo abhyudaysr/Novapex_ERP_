@@ -12,6 +12,12 @@ import { motion, AnimatePresence } from "framer-motion"
 export default function UserManagementPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRole, setSelectedRole] = useState("all")
+  const statColorClasses = {
+    blue: "bg-blue-50 text-blue-600",
+    emerald: "bg-emerald-50 text-emerald-600",
+    rose: "bg-rose-50 text-rose-600",
+    amber: "bg-amber-50 text-amber-600",
+  }
 
   const users = [
     { id: 1, name: "Sarah Johnson", email: "sarah@techcorp.com", role: "Admin", status: "Active", lastLogin: "2 hours ago", avatar: "https://i.pravatar.cc/150?u=sarah" },
@@ -30,7 +36,7 @@ export default function UserManagementPage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 md:p-10 text-slate-900">
+    <div className="page-shell p-6 md:p-10 text-slate-900">
       <div className="max-w-7xl mx-auto">
         
         {/* Header Section */}
@@ -63,7 +69,7 @@ export default function UserManagementPage() {
                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{stat.label}</p>
                 <p className="text-3xl font-black text-slate-900">{stat.val}</p>
               </div>
-              <div className={`w-12 h-12 rounded-2xl bg-${stat.color}-50 flex items-center justify-center text-${stat.color}-600`}>
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${statColorClasses[stat.color]}`}>
                 <stat.icon className="w-6 h-6" />
               </div>
             </div>

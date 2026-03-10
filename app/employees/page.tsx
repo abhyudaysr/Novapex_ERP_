@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { PageHeader } from "@/components/page-header"
 import { useState, useEffect } from "react"
 import { 
   Search, 
   Plus, 
   Mail, 
   Briefcase, 
-  Calendar, 
   Users, 
   UserCheck, 
   UserMinus,
@@ -78,27 +78,29 @@ export default function EmployeesPage() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
+    <div className="page-shell p-8 max-w-7xl mx-auto space-y-10 pb-20 animate-in fade-in duration-700">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black tracking-tighter text-slate-900">
-            {isEmployee ? "My Profile" : "Workforce"} <span className="text-blue-600">{isEmployee ? "Identity" : "Universe"}</span>
-          </h1>
-          <p className="text-slate-500 font-medium mt-1">
-            {isHR ? "Orchestrating your global talent pool." : isManager ? "Managing your direct team performance." : "Your corporate identity and career details."}
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="People Grid"
+        statusLabel={isEmployee ? "Self View" : isManager ? "Team Scope" : "HR Control"}
+        title={`${isEmployee ? "My Profile" : "Workforce"} ${isEmployee ? "Identity" : "Universe"}`}
+        description={
+          isHR
+            ? "Orchestrating your global talent pool."
+            : isManager
+              ? "Managing your direct team performance."
+              : "Your corporate identity and career details."
+        }
+      >
         {isHR && (
           <Link href="/employees/add">
-            <Button className="bg-slate-900 hover:bg-blue-600 text-white shadow-2xl shadow-slate-200 h-14 px-8 rounded-2xl flex gap-2 font-black transition-all group">
-              <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+            <Button className="bg-slate-900 hover:bg-blue-600 text-white shadow-2xl shadow-slate-200 h-11 px-6 rounded-xl flex gap-2 font-black transition-all group">
+              <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
               Onboard Talent
             </Button>
           </Link>
         )}
-      </div>
+      </PageHeader>
 
       {/* Workforce Snapshots - Only for HR/Managers */}
       {!isEmployee && (
@@ -120,7 +122,7 @@ export default function EmployeesPage() {
 
       {/* Search & Intelligence Filters - Hidden for Employee */}
       {!isEmployee && (
-        <div className="bg-white border border-slate-100 p-4 rounded-[32px] shadow-sm">
+        <div className="section-shell p-4 rounded-[32px]">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1 group">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />

@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { PageHeader } from "@/components/page-header"
 
 const coursesData = [
   {
@@ -116,43 +117,35 @@ export default function CoursesPage() {
   const isEmployee = userRole === "employee"
 
   return (
-    <div className="min-h-screen bg-[#fcfdfe] py-20 px-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="py-8 px-2">
+      <div className="page-shell max-w-7xl mx-auto p-6 md:p-10">
         
-        {/* Hub Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row justify-between items-end gap-6 mb-20"
-        >
-          <div className="text-left">
-            <div className="flex items-center gap-2 mb-4">
-               <Badge className="bg-blue-50 text-blue-600 border-none px-3 py-1 font-black text-[10px] uppercase">
-                {userRole} Portal
-               </Badge>
-            </div>
-            <h1 className="text-6xl font-black tracking-tighter text-slate-900 mb-4">
-              Novapex <span className="text-blue-600">Academy</span>
-            </h1>
-            <p className="text-slate-500 font-medium text-lg max-w-2xl leading-relaxed">
-              {isHR ? "Managing organizational intellectual capital and compliance." : 
-               isManager ? "Developing your team's specialized skillsets." : 
-               "Your personalized journey to professional mastery."}
-            </p>
-          </div>
-
-          <div className="flex gap-4">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
+          <PageHeader
+            eyebrow="Learning Engine"
+            statusLabel={`${userRole.toUpperCase()} Portal`}
+            title="Novapex Academy"
+            description={
+              isHR
+                ? "Managing organizational intellectual capital and compliance."
+                : isManager
+                  ? "Developing your team's specialized skillsets."
+                  : "Your personalized journey to professional mastery."
+            }
+            className="mb-20"
+          >
+            <Badge className="badge badge-blue px-3 py-1">{userRole} Portal</Badge>
             {isEmployee && (
-              <Button className="h-14 px-8 rounded-2xl bg-slate-900 font-black text-xs uppercase tracking-widest text-white shadow-xl shadow-slate-200">
+              <Button className="h-11 rounded-xl bg-slate-900 font-black text-xs uppercase tracking-widest text-white">
                 <Award className="w-4 h-4 mr-2" /> My Certificates
               </Button>
             )}
             {isHR && (
-              <Button className="h-14 px-8 rounded-2xl bg-blue-600 font-black text-xs uppercase tracking-widest text-white shadow-xl shadow-blue-200">
+              <Button className="h-11 rounded-xl bg-blue-600 font-black text-xs uppercase tracking-widest text-white">
                 <PlusCircle className="w-4 h-4 mr-2" /> Create Course
               </Button>
             )}
-          </div>
+          </PageHeader>
         </motion.div>
 
         {/* Learner Progress Bar - Employee Only */}

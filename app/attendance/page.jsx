@@ -6,8 +6,9 @@ import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Clock, Calendar, Users, TrendingUp, CheckCircle, AlertCircle, Filter, Download, ArrowRight, LogIn, LogOut } from "lucide-react"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { PageHeader } from "@/components/page-header"
+import { Clock, Calendar, Users, TrendingUp, CheckCircle, AlertCircle, Filter, Download, ArrowRight, LogOut } from "lucide-react"
 
 export default function AttendancePage() {
   const [currentTime, setCurrentTime] = useState(new Date())
@@ -58,38 +59,33 @@ export default function AttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="p-4 md:p-8">
+      <div className="page-shell max-w-7xl mx-auto space-y-8 p-4 md:p-8">
         
-        {/* Header Section */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
-        >
-          <div>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900">
-              {isEmployee ? "My Time" : "Attendance"} <span className="text-blue-600">{isEmployee ? "Logs" : "Overview"}</span>
-            </h1>
-            <p className="text-slate-500 font-medium mt-1">
-              {isEmployee ? "Track your hours and attendance history" : "Real-time workforce monitoring and analytics"}
-            </p>
-          </div>
-          
-          <div className="flex gap-3">
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+          <PageHeader
+            eyebrow="Operations Clock"
+            statusLabel={isEmployee ? "Self Tracking" : isManager ? "Team Monitoring" : "Enterprise"}
+            title={`${isEmployee ? "My Time" : "Attendance"} ${isEmployee ? "Logs" : "Overview"}`}
+            description={
+              isEmployee
+                ? "Track your hours and attendance history"
+                : "Real-time workforce monitoring and analytics"
+            }
+          >
             {!isEmployee && (
-              <Button variant="outline" className="h-12 px-6 rounded-xl border-white bg-white/60 backdrop-blur-md font-bold shadow-sm">
+              <Button variant="outline" className="h-11 px-5 rounded-xl border-white bg-white/60 backdrop-blur-md font-bold shadow-sm">
                 <Filter className="w-4 h-4 mr-2" />
                 Filter
               </Button>
             )}
             {isHR && (
-              <Button className="h-12 px-6 rounded-xl bg-slate-900 text-white font-bold shadow-xl">
+              <Button className="h-11 px-5 rounded-xl bg-slate-900 text-white font-bold shadow-xl">
                 <Download className="w-4 h-4 mr-2" />
                 Export Report
               </Button>
             )}
-          </div>
+          </PageHeader>
         </motion.div>
 
         {/* Dynamic Glass Clock & Check-in (Role Specific) */}
@@ -219,9 +215,9 @@ export default function AttendancePage() {
           {/* Side Actions Area */}
           <div className={`${isEmployee ? "lg:col-span-3 grid grid-cols-1 md:grid-cols-3" : "space-y-6"} gap-6`}>
             {[
-              { title: isEmployee ? "My Hours" : "Time Tracking", desc: "Detailed logs and work hours", icon: Clock, link: "#" },
-              { title: "Leave Requests", desc: "Manage approvals and balances", icon: Calendar, link: "#" },
-              { title: isEmployee ? "History" : "Analytics", desc: "View historical data", icon: TrendingUp, link: "#" }
+              { title: isEmployee ? "My Hours" : "Time Tracking", desc: "Detailed logs and work hours", icon: Clock, link: "/attendance/time-tracking" },
+              { title: "Leave Requests", desc: "Manage approvals and balances", icon: Calendar, link: "/attendance/leave-requests" },
+              { title: isEmployee ? "History" : "Analytics", desc: "View historical data", icon: TrendingUp, link: "/attendance/reports" }
             ].map((action, i) => (
               <Link key={i} href={action.link}>
                 <Card className="glass-card border-white bg-white/40 backdrop-blur-md rounded-3xl hover:bg-white transition-all group cursor-pointer shadow-sm h-full">

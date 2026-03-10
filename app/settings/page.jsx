@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
 import { 
-  Settings, Building2, Users, Shield, 
+  Building2, Users, Shield, 
   Bell, Database, Palette, ChevronRight, 
   Plus, History, Activity, Sparkles 
 } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { PageHeader } from "@/components/page-header"
 
 export default function SettingsPage() {
   const settingsCards = [
@@ -68,25 +68,21 @@ export default function SettingsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 md:p-10 text-slate-900">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-2 md:p-4 text-slate-900">
+      <div className="page-shell max-w-7xl mx-auto p-6 md:p-10">
         
-        {/* Header Section */}
-        <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
-          <div className="flex items-center gap-6">
-            <div className="w-14 h-14 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-xl shadow-slate-200">
-              <Settings className="w-7 h-7 animate-[spin_4s_linear_infinite]" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-black tracking-tighter italic">CORE_SETTINGS</h1>
-              <p className="text-slate-500 font-medium">Global configuration hub for Novapex ERP.</p>
-            </div>
+        <PageHeader
+          eyebrow="Control Plane"
+          statusLabel="Enterprise v2.1"
+          title="CORE_SETTINGS"
+          description="Global configuration hub for Novapex ERP."
+          className="mb-12"
+        >
+          <div className="metric-pill">
+            <Sparkles className="w-3 h-3 text-amber-500" />
+            Live Config Sync
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-2xl shadow-sm">
-            <Sparkles className="w-4 h-4 text-amber-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">Enterprise Edition v2.1</span>
-          </div>
-        </header>
+        </PageHeader>
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           

@@ -26,7 +26,7 @@ export default function AppearanceSettingsPage() {
   ]
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${selectedTheme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} p-8`}>
+    <div className={`page-shell transition-colors duration-500 ${selectedTheme === 'dark' ? 'text-white' : 'text-slate-900'} p-8`}>
       <div className="max-w-6xl mx-auto">
         
         {/* Breadcrumb Header */}
