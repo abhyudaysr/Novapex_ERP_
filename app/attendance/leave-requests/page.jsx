@@ -3,267 +3,309 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
-  Calendar,
-  Plus,
-  Search,
-  Check,
-  X,
-  ArrowLeft,
-  Info,
-  FileText,
-  Loader2,
+  Calendar, Plus, Search, Check, X, ArrowLeft,
+  FileText, Loader2, ChevronDown, ChevronUp, RefreshCw,
 } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
 
-const LEAVE_TYPES = ["Annual Leave", "Sick Leave", "Personal Leave"]
+const LEAVE_TYPES   = ["Annual Leave", "Sick Leave", "Personal Leave"]
+const STATUS_FILTERS = ["All", "Pending", "Approved", "Rejected", "Cancelled"]
 
-function getInitials(name) {
-  return (name || "NA")
-    .split(" ")
-    .map((token) => token[0] || "")
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function statusStyle(status) {
+  if (status === "Approved")  return { bg: "var(--green-bg)",  text: "var(--green)"  }
+  if (status === "Pending")   return { bg: "var(--amber-bg)",  text: "var(--amber)"  }
+  if (status === "Rejected")  return { bg: "var(--red-bg)",    text: "var(--red)"    }
+  if (status === "Cancelled") return { bg: "var(--surface-3)", text: "var(--t4)"     }
+  return { bg: "var(--surface-3)", text: "var(--t4)" }
 }
 
-export default function LeaveRequestsPage() {
-  const [showNewRequest, setShowNewRequest] = useState(false)
-  const [showLeaveBalance, setShowLeaveBalance] = useState(null)
-  const [userRole, setUserRole] = useState("employee")
-  const [sessionEmail, setSessionEmail] = useState("")
-  const [sessionCompany, setSessionCompany] = useState("")
-  const [leaveRequests, setLeaveRequests] = useState([])
-  const [stats, setStats] = useState(null)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [activeActionId, setActiveActionId] = useState("")
-  const [errorMessage, setErrorMessage] = useState("")
-  const [newRequest, setNewRequest] = useState({
-    leaveType: "Annual Leave",
-    startDate: "",
-    endDate: "",
-    reason: "",
-  })
+// ─────────────────────────────────────────────────────────────────────────────
+// BALANCE BARS — expandable row shown below each table row
+// ─────────────────────────────────────────────────────────────────────────────
+function BalanceRow({ balance }) {
+  if (!balance || Object.keys(balance).length === 0) {
+    return (
+      <div className="px-6 py-3 text-xs" style={{ color: "var(--t4)" }}>
+        Balance data not available for this employee.
+      </div>
+    )
+  }
 
-  const isHR = userRole === "hr"
-  const isManager = userRole === "manager"
+  const COLORS = {
+    annual:   { bar: "var(--blue)",   bg: "var(--blue-bg)"   },
+    sick:     { bar: "var(--amber)",  bg: "var(--amber-bg)"  },
+    personal: { bar: "var(--purple)", bg: "var(--purple-bg)" },
+  }
+
+  return (
+    <div className="px-6 py-4 grid grid-cols-1 sm:grid-cols-3 gap-4"
+      style={{ background: "var(--surface-2)", borderTop: "1px solid var(--b1)" }}>
+      {Object.entries(balance).map(([type, data]) => {
+        const used      = data.used  ?? 0
+        const total     = data.total ?? 0
+        const remaining = Math.max(total - used, 0)
+        const pct       = total > 0 ? Math.round((used / total) * 100) : 0
+        const c         = COLORS[type] || { bar: "var(--accent)", bg: "var(--accent-bg)" }
+
+        return (
+          <div key={type} className="p-3 rounded-xl"
+            style={{ background: "var(--surface-3)" }}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider capitalize"
+                style={{ color: "var(--t4)" }}>{type} Leave</span>
+              <span className="text-xs font-bold tabular-nums" style={{ color: c.bar }}>
+                {remaining} left
+              </span>
+            </div>
+            <div className="h-2 rounded-full overflow-hidden mb-1.5"
+              style={{ background: "var(--b1)" }}>
+              <motion.div className="h-full rounded-full" style={{ background: c.bar }}
+                initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                transition={{ duration: 0.6, ease: "easeOut" }} />
+            </div>
+            <p className="text-[9px]" style={{ color: "var(--t4)" }}>
+              {used} used · {remaining} remaining · {total} total
+            </p>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// APPLY LEAVE MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function ApplyModal({ sessionCompany, onClose, onSubmit, isSubmitting, error }) {
+  const [form, setForm] = useState({
+    leaveType: "Annual Leave", startDate: "", endDate: "", reason: "",
+  })
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
+
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.93, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.93, y: 20 }}
+        transition={{ type: "spring", stiffness: 300, damping: 26 }}
+        className="w-full max-w-lg rounded-[24px] overflow-hidden"
+        style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-xl)" }}>
+
+        <div className="relative px-6 py-5 flex items-center justify-between"
+          style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--b1)" }}>
+          <div className="absolute top-0 left-0 right-0 h-[2px]"
+            style={{ background: "linear-gradient(90deg, transparent, var(--accent) 40%, var(--blue) 70%, transparent)" }} />
+          <div>
+            <h3 className="text-base font-bold" style={{ color: "var(--t1)", letterSpacing: "-0.02em" }}>
+              New Leave Application
+            </h3>
+            <p className="text-[10px] mt-0.5" style={{ color: "var(--t4)" }}>
+              Request will be routed within {sessionCompany}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg" style={{ color: "var(--t4)" }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--surface-3)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="px-4 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ background: "var(--red-bg)", color: "var(--red)", border: "1px solid var(--red)" }}>
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5"
+              style={{ color: "var(--t4)" }}>Leave Type</label>
+            <select value={form.leaveType} onChange={e => set("leaveType", e.target.value)}
+              className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
+              style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t1)" }}>
+              {LEAVE_TYPES.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {["startDate", "endDate"].map(field => (
+              <div key={field}>
+                <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5"
+                  style={{ color: "var(--t4)" }}>
+                  {field === "startDate" ? "Start Date" : "End Date"}
+                </label>
+                <input type="date" value={form[field]} onChange={e => set(field, e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl text-sm outline-none"
+                  style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t1)" }} />
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider mb-1.5"
+              style={{ color: "var(--t4)" }}>
+              Reason <span style={{ fontWeight: 400, textTransform: "none" }}>(min 8 chars)</span>
+            </label>
+            <textarea value={form.reason} onChange={e => set("reason", e.target.value)}
+              rows={3} placeholder="Describe the reason for your leave request…"
+              className="w-full px-4 py-2.5 rounded-xl text-sm outline-none resize-none"
+              style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t1)" }} />
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ background: "var(--surface-2)", color: "var(--t3)", border: "1px solid var(--b1)" }}>
+              Cancel
+            </button>
+            <button onClick={() => onSubmit(form)} disabled={isSubmitting}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2"
+              style={{ background: isSubmitting ? "var(--surface-3)" : "var(--accent)",
+                color: isSubmitting ? "var(--t4)" : "white" }}>
+              {isSubmitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {isSubmitting ? "Submitting…" : "Submit Request"}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+export default function LeaveRequestsPage() {
+  // ── Session ─────────────────────────────────────────────────────────
+  const [userRole,       setUserRole]       = useState("employee")
+  const [sessionEmail,   setSessionEmail]   = useState("")
+  const [sessionCompany, setSessionCompany] = useState("")
+
+  // ── Data ─────────────────────────────────────────────────────────────
+  const [leaveRequests,  setLeaveRequests]  = useState([])
+  const [stats,          setStats]          = useState(null)
+  const [isLoading,      setIsLoading]      = useState(true)
+  const [errorMessage,   setErrorMessage]   = useState("")
+
+  // ── UI ───────────────────────────────────────────────────────────────
+  const [searchTerm,     setSearchTerm]     = useState("")
+  const [statusFilter,   setStatusFilter]   = useState("All")
+  const [expandedRow,    setExpandedRow]    = useState(null)
+  const [showModal,      setShowModal]      = useState(false)
+  const [isSubmitting,   setIsSubmitting]   = useState(false)
+  const [submitError,    setSubmitError]    = useState("")
+  const [successMsg,     setSuccessMsg]     = useState("")
+  const [activeActionId, setActiveActionId] = useState("")
+
+  const isHR       = userRole === "hr"
+  const isManager  = userRole === "manager"
   const isEmployee = userRole === "employee"
 
-  const loadLeaveData = async (
-    emailContext,
-    companyContext,
-    withLoader = false,
-  ) => {
-    if (!emailContext || !companyContext) return
-    if (withLoader) setIsLoading(true)
+  // ── Bootstrap ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const role    = (sessionStorage.getItem("userRole") || "employee").toLowerCase()
+    const email   = sessionStorage.getItem("userEmail")    || localStorage.getItem("userEmail")    || localStorage.getItem("rememberedEmail")   || `${role}@novapex.com`
+    const company = sessionStorage.getItem("companyName")  || localStorage.getItem("companyName")  || localStorage.getItem("rememberedCompany") || "Novapex Systems"
+    setUserRole(role)
+    setSessionEmail(email)
+    setSessionCompany(company)
+    loadData(email, company, true)
+  }, [])
 
+  // ── Fetch — scoped by email + company (multi-tenant safe) ──────────────
+  const loadData = async (email, company, withLoader = false) => {
+    if (!email || !company) return
+    if (withLoader) setIsLoading(true)
     try {
       setErrorMessage("")
-      const params = new URLSearchParams({
-        email: emailContext,
-        company: companyContext,
-      })
-      const response = await fetch(`/api/leave?${params.toString()}`, {
-        cache: "no-store",
-      })
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to sync leave data.")
-      }
+      const res  = await fetch(
+        `/api/leave?email=${encodeURIComponent(email)}&company=${encodeURIComponent(company)}`,
+        { cache: "no-store" }
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Unable to sync leave data.")
       setLeaveRequests(data.requests || [])
       setStats(data.stats || null)
-      if (data.actor?.role) {
-        setUserRole(String(data.actor.role).toLowerCase())
-      }
-    } catch (error) {
-      setErrorMessage(error.message || "Leave synchronization failed.")
+      // Sync role from API actor (authoritative)
+      if (data.actor?.role) setUserRole(String(data.actor.role).toLowerCase())
+    } catch (e) {
+      setErrorMessage(e.message || "Leave synchronisation failed.")
     } finally {
       if (withLoader) setIsLoading(false)
     }
   }
 
-  useEffect(() => {
-    const storedRole = (sessionStorage.getItem("userRole") || "employee").toLowerCase()
-    const storedEmail =
-      sessionStorage.getItem("userEmail") ||
-      localStorage.getItem("userEmail") ||
-      localStorage.getItem("rememberedEmail") ||
-      `${storedRole}@novapex.com`
-    const storedCompany =
-      sessionStorage.getItem("companyName") ||
-      localStorage.getItem("companyName") ||
-      localStorage.getItem("rememberedCompany") ||
-      "Novapex Systems"
+  // ── Filtering ──────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return leaveRequests.filter(r => {
+      const matchSearch = !searchTerm.trim() ||
+        [r.employee, r.department, r.leaveType, r.status, r.reason]
+          .some(v => String(v || "").toLowerCase().includes(searchTerm.toLowerCase()))
+      const matchStatus = statusFilter === "All" || r.status === statusFilter
+      return matchSearch && matchStatus
+    })
+  }, [leaveRequests, searchTerm, statusFilter])
 
-    setUserRole(storedRole)
-    setSessionEmail(storedEmail)
-    setSessionCompany(storedCompany)
-    loadLeaveData(storedEmail, storedCompany, true)
-  }, [])
-
-  const filteredRequests = useMemo(() => {
-    const normalizedSearch = searchTerm.trim().toLowerCase()
-    if (!normalizedSearch) return leaveRequests
-
-    return leaveRequests.filter((request) =>
-      [
-        request.employee,
-        request.department,
-        request.leaveType,
-        request.status,
-        request.reason,
-      ].some((value) =>
-        String(value || "").toLowerCase().includes(normalizedSearch),
-      ),
-    )
-  }, [leaveRequests, searchTerm])
-
-  const selectedRequest = useMemo(
-    () => leaveRequests.find((request) => request.id === showLeaveBalance) || null,
-    [leaveRequests, showLeaveBalance],
-  )
-
-  const leaveStats = [
-    {
-      title: "Pending Requests",
-      value: String(stats?.pendingRequests ?? 0),
-      color: "text-amber-500",
-      show: !isEmployee,
-    },
-    {
-      title: "Approved This Month",
-      value: String(stats?.approvedThisMonth ?? 0),
-      color: "text-emerald-500",
-      show: !isEmployee,
-    },
-    {
-      title: "Annual Balance",
-      value: stats?.annualBalance || "N/A",
-      color: "text-blue-500",
-      show: isEmployee,
-    },
-    {
-      title: "Sick Leave Left",
-      value: stats?.sickLeaveLeft || "N/A",
-      color: "text-violet-500",
-      show: isEmployee,
-    },
-    {
-      title: "Approved Days",
-      value: String(stats?.totalApprovedDays ?? 0),
-      color: "text-blue-500",
-      show: isHR,
-    },
-  ]
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "Approved":
-        return "bg-emerald-500/10 text-emerald-600 border-emerald-200"
-      case "Pending":
-        return "bg-amber-500/10 text-amber-600 border-amber-200"
-      case "Rejected":
-        return "bg-rose-500/10 text-rose-600 border-rose-200"
-      case "Cancelled":
-        return "bg-slate-500/10 text-slate-600 border-slate-200"
-      default:
-        return "bg-slate-500/10 text-slate-600 border-slate-200"
-    }
-  }
-
-  const handleLeaveAction = async (requestId, action) => {
-    if (!sessionEmail || !sessionCompany) {
-      setErrorMessage("Missing session context. Please log in again.")
-      return
-    }
-
-    const actionKey = `${requestId}:${action}`
-    setActiveActionId(actionKey)
+  // ── Approve / Reject / Cancel ──────────────────────────────────────────
+  const handleAction = async (requestId, action) => {
+    const key = `${requestId}:${action}`
+    setActiveActionId(key)
     setErrorMessage("")
-
     try {
-      const response = await fetch("/api/leave", {
+      const res  = await fetch("/api/leave", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: sessionEmail,
-          company: sessionCompany,
-          requestId,
-          action,
-        }),
+        body: JSON.stringify({ email: sessionEmail, company: sessionCompany, requestId, action }),
       })
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to update leave request.")
-      }
-      await loadLeaveData(sessionEmail, sessionCompany, false)
-    } catch (error) {
-      setErrorMessage(error.message || "Unable to update leave request.")
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Unable to update leave request.")
+      await loadData(sessionEmail, sessionCompany)
+    } catch (e) {
+      setErrorMessage(e.message)
     } finally {
       setActiveActionId("")
     }
   }
 
-  const handleCreateRequest = async (event) => {
-    event.preventDefault()
-
-    if (!sessionEmail || !sessionCompany) {
-      setErrorMessage("Missing session context. Please log in again.")
-      return
-    }
-
-    if (!newRequest.startDate || !newRequest.endDate || !newRequest.reason.trim()) {
-      setErrorMessage("Please complete all fields before submitting.")
-      return
-    }
-
+  // ── Submit new leave ───────────────────────────────────────────────────
+  const handleSubmit = async (form) => {
+    if (!sessionEmail || !sessionCompany) { setSubmitError("Missing session. Please log in again."); return }
+    if (!form.startDate || !form.endDate || !form.reason.trim()) { setSubmitError("Please complete all fields."); return }
     setIsSubmitting(true)
-    setErrorMessage("")
-
+    setSubmitError("")
     try {
-      const response = await fetch("/api/leave", {
+      const res  = await fetch("/api/leave", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: sessionEmail,
-          company: sessionCompany,
-          leaveType: newRequest.leaveType,
-          startDate: newRequest.startDate,
-          endDate: newRequest.endDate,
-          reason: newRequest.reason.trim(),
-        }),
+        body: JSON.stringify({ email: sessionEmail, company: sessionCompany, ...form }),
       })
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to submit leave request.")
-      }
-
-      setShowNewRequest(false)
-      setNewRequest({
-        leaveType: "Annual Leave",
-        startDate: "",
-        endDate: "",
-        reason: "",
-      })
-      await loadLeaveData(sessionEmail, sessionCompany, false)
-    } catch (error) {
-      setErrorMessage(error.message || "Unable to submit leave request.")
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Unable to submit leave request.")
+      setShowModal(false)
+      setSuccessMsg("Leave request submitted successfully!")
+      setTimeout(() => setSuccessMsg(""), 4000)
+      await loadData(sessionEmail, sessionCompany)
+    } catch (e) {
+      setSubmitError(e.message)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  // ── Loading ────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="page-shell p-8 min-h-[60vh] flex items-center justify-center">
-        <div className="glass-card rounded-3xl p-8 flex flex-col items-center gap-3 border border-white/60">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
+      <div className="min-h-[60vh] flex items-center justify-center p-8"
+        style={{ background: "var(--surface-0)" }}>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: "var(--accent)" }} />
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em]" style={{ color: "var(--t4)" }}>
             Syncing Leave Workspace
           </p>
         </div>
@@ -271,450 +313,364 @@ export default function LeaveRequestsPage() {
     )
   }
 
+  const showEmployeeCol = isHR || isManager
+
+  // Grid template based on role
+  const gridCols = showEmployeeCol
+    ? "minmax(140px,1.5fr) minmax(110px,1fr) minmax(120px,1.2fr) 90px 90px 46px minmax(72px,auto) minmax(130px,1fr)"
+    : "minmax(140px,1.5fr) 90px 90px 46px minmax(72px,auto) minmax(120px,1fr)"
+
   return (
-    <div className="page-shell p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-6"
-        >
-          <div className="space-y-1">
-            <Link href="/attendance">
-              <Button variant="ghost" size="sm" className="hover:bg-white/50 -ml-2 mb-2 group">
-                <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-                Back to {isEmployee ? "Dashboard" : "Attendance"}
-              </Button>
+    <>
+      <AnimatePresence>
+        {showModal && (
+          <ApplyModal
+            sessionCompany={sessionCompany}
+            onClose={() => { setShowModal(false); setSubmitError("") }}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            error={submitError}
+          />
+        )}
+      </AnimatePresence>
+
+      <div className="min-h-screen p-4 md:p-8 max-w-7xl mx-auto space-y-6"
+        style={{ background: "var(--surface-0)" }}>
+
+        {/* ══ HEADER ═════════════════════════════════════════════════ */}
+        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <Link href="/attendance"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold mb-3 group"
+              style={{ color: "var(--t4)" }}
+              onMouseEnter={e => e.currentTarget.style.color = "var(--accent-t)"}
+              onMouseLeave={e => e.currentTarget.style.color = "var(--t4)"}>
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+              Back to {isEmployee ? "Dashboard" : "Attendance"}
             </Link>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900">
+            <h1 className="text-4xl font-bold tracking-tight" style={{ color: "var(--t1)", letterSpacing: "-0.04em" }}>
               {isEmployee ? "My Leaves" : "Leave Management"}
             </h1>
-            <p className="text-slate-500 font-medium">
-              {isHR
-                ? "Company-wide leave tracking with tenant-safe approvals"
-                : isManager
-                  ? "Review requests routed to you from your company"
-                  : "Apply for leave and track your approvals"}
+            <p className="text-sm font-medium mt-1" style={{ color: "var(--t3)" }}>
+              {isHR      ? "Company-wide leave tracking with tenant-safe approvals"
+               : isManager ? "Review requests routed to you from your team"
+               :             "Apply for leave and track your approvals"}
             </p>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-              {sessionCompany || "Company context unavailable"}
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] mt-1"
+              style={{ color: "var(--accent-t)" }}>
+              {sessionCompany}
             </p>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex items-center gap-2 shrink-0">
+            <button onClick={() => loadData(sessionEmail, sessionCompany)}
+              className="p-2.5 rounded-xl transition-all hover:scale-105"
+              style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t4)" }}>
+              <RefreshCw className="w-4 h-4" />
+            </button>
             {!isEmployee && (
-              <Link href="/attendance/reports">
-                <Button
-                  variant="outline"
-                  className="h-12 px-6 rounded-2xl border-white bg-white/60"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Reports
-                </Button>
+              <Link href="/attendance/reports"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold"
+                style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t2)" }}>
+                <FileText className="w-4 h-4" /> Reports
               </Link>
             )}
             {(isEmployee || isHR) && (
-              <Button
-                onClick={() => setShowNewRequest(true)}
-                className="bg-primary hover:bg-primary/90 shadow-lg h-12 px-6 rounded-2xl"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                New Application
-              </Button>
+              <button onClick={() => { setSubmitError(""); setShowModal(true) }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-all"
+                style={{ background: "var(--accent)", boxShadow: "var(--glow-accent)" }}>
+                <Plus className="w-4 h-4" /> New Application
+              </button>
             )}
           </div>
         </motion.div>
 
-        {errorMessage && (
-          <div className="glass-card rounded-2xl border border-rose-200 bg-rose-50/80 px-4 py-3 text-sm font-semibold text-rose-700">
-            {errorMessage}
-          </div>
-        )}
+        {/* ══ TOASTS ═════════════════════════════════════════════════ */}
+        <AnimatePresence>
+          {successMsg && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-3 px-5 py-3 rounded-2xl"
+              style={{ background: "var(--green-bg)", border: "1px solid var(--green)", color: "var(--green)" }}>
+              <Check className="w-4 h-4" />
+              <span className="text-sm font-semibold">{successMsg}</span>
+            </motion.div>
+          )}
+          {errorMessage && (
+            <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+              className="flex items-center gap-3 px-5 py-3 rounded-2xl"
+              style={{ background: "var(--red-bg)", border: "1px solid var(--red)", color: "var(--red)" }}>
+              <X className="w-4 h-4" />
+              <span className="text-sm font-semibold flex-1">{errorMessage}</span>
+              <button onClick={() => setErrorMessage("")}><X className="w-3.5 h-3.5" /></button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
+        {/* ══ STAT CARDS ═════════════════════════════════════════════ */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {leaveStats
-            .filter((stat) => stat.show)
-            .map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="glass-card p-6 rounded-[24px] border border-white/60 bg-white/40 backdrop-blur-md"
-              >
-                <p className={`text-3xl font-black ${stat.color} mb-1`}>{stat.value}</p>
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  {stat.title}
-                </p>
-              </motion.div>
-            ))}
+          {[
+            { label: "Pending Requests",   value: stats?.pendingRequests   ?? 0,     color: "var(--amber)",  show: !isEmployee },
+            { label: "Approved This Month", value: stats?.approvedThisMonth ?? 0,     color: "var(--green)",  show: !isEmployee },
+            { label: "Annual Balance",      value: stats?.annualBalance     || "N/A", color: "var(--blue)",   show: isEmployee  },
+            { label: "Sick Leave Left",     value: stats?.sickLeaveLeft     || "N/A", color: "var(--purple)", show: isEmployee  },
+            { label: "Total Approved Days", value: stats?.totalApprovedDays ?? 0,     color: "var(--blue)",   show: isHR        },
+          ].filter(s => s.show).map((s, i) => (
+            <motion.div key={s.label}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.07 }}
+              className="rounded-[22px] p-5"
+              style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
+              <p className="text-3xl font-bold tabular-nums" style={{ color: s.color, letterSpacing: "-0.04em" }}>
+                {String(s.value)}
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color: "var(--t4)" }}>
+                {s.label}
+              </p>
+            </motion.div>
+          ))}
         </div>
 
-        <div className="glass-card rounded-3xl border border-white/60 bg-white/50 backdrop-blur-md p-4 md:p-5">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder="Search by employee, leave type, status, or reason..."
-              className="w-full h-11 rounded-xl border border-white/60 bg-white/80 pl-10 pr-4 text-sm font-medium text-slate-700 outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-            />
+        {/* ══ SEARCH + STATUS FILTER ══════════════════════════════════ */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--t4)" }} />
+            <input type="text" value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder={showEmployeeCol
+                ? "Search employee, department, leave type, status, reason…"
+                : "Search leave type, status, or reason…"}
+              className="w-full h-11 pl-10 pr-4 rounded-xl text-sm outline-none"
+              style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", color: "var(--t1)" }} />
+          </div>
+
+          {/* Status filter pills */}
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {STATUS_FILTERS.map(f => {
+              const count = f === "All" ? null : leaveRequests.filter(r => r.status === f).length
+              return (
+                <button key={f} onClick={() => setStatusFilter(f)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                  style={{
+                    background: statusFilter === f ? "var(--accent)" : "var(--surface-1)",
+                    color:      statusFilter === f ? "white" : "var(--t3)",
+                    border:     `1px solid ${statusFilter === f ? "var(--accent)" : "var(--b1)"}`,
+                  }}>
+                  {f}
+                  {count !== null && count > 0 && (
+                    <span className="ml-1.5 text-[9px] opacity-80">{count}</span>
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredRequests.map((request, index) => {
-            const isPending = request.status === "Pending"
-            const isActionRunning = activeActionId.startsWith(`${request.id}:`)
+        {/* ══ TABLE ═══════════════════════════════════════════════════ */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="rounded-[22px] overflow-hidden"
+          style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
+
+          {/* Column headers */}
+          <div className="relative">
+            <div className="absolute top-0 left-0 right-0 h-[2px]"
+              style={{ background: "linear-gradient(90deg, transparent, var(--accent) 40%, var(--blue) 70%, transparent)" }} />
+            <div className="grid text-[9px] font-bold uppercase tracking-wider px-5 py-3 overflow-x-auto"
+              style={{
+                gridTemplateColumns: gridCols,
+                background: "var(--surface-2)",
+                borderBottom: "1px solid var(--b1)",
+                color: "var(--t4)",
+                minWidth: showEmployeeCol ? "820px" : "560px",
+              }}>
+              {showEmployeeCol && <span>Employee</span>}
+              {showEmployeeCol && <span>Department</span>}
+              <span>Leave Type</span>
+              <span>Start</span>
+              <span>End</span>
+              <span className="text-center">Days</span>
+              <span className="text-center">Status</span>
+              <span>Actions</span>
+            </div>
+          </div>
+
+          {/* Empty state */}
+          {filtered.length === 0 ? (
+            <div className="py-16 text-center px-6">
+              <Calendar className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--b2)" }} />
+              <p className="text-sm font-semibold" style={{ color: "var(--t3)" }}>No leave requests found</p>
+              <p className="text-xs mt-1" style={{ color: "var(--t4)" }}>
+                Try adjusting your search or filter, or submit a new application.
+              </p>
+            </div>
+          ) : filtered.map((r, i) => {
+            const isPending      = r.status === "Pending"
+            const isExpanded     = expandedRow === r.id
+            const sc             = statusStyle(r.status)
+            const isActioning    = activeActionId.startsWith(`${r.id}:`)
 
             return (
-              <motion.div
-                key={request.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.06 }}
-                className="glass-card relative overflow-hidden rounded-[32px] border border-white/80 bg-white/70 backdrop-blur-xl shadow-xl p-1"
-              >
-                <div className="p-6 space-y-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-14 h-14 border-2 border-white shadow-md">
-                        <AvatarImage src={request.avatar} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                          {getInitials(request.employee)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h3 className="font-bold text-lg text-slate-800">{request.employee}</h3>
-                        <p className="text-xs font-semibold text-slate-400 uppercase tracking-tight">
-                          {request.department}
-                        </p>
-                      </div>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={`${getStatusColor(request.status)} font-bold rounded-lg px-3 py-1`}
-                    >
-                      {request.status}
-                    </Badge>
-                  </div>
+              <motion.div key={r.id}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                transition={{ delay: i * 0.025 }}
+                style={{ borderBottom: "1px solid var(--b1)" }}>
 
-                  <div className="grid grid-cols-2 gap-4 bg-white/40 p-4 rounded-2xl border border-white/50">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Leave Type</p>
-                      <p className="font-bold text-slate-700">{request.leaveType}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Duration</p>
-                      <p className="font-bold text-slate-700">{request.days} Days</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Start</p>
-                      <p className="font-bold text-slate-700">{request.startDate}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">End</p>
-                      <p className="font-bold text-slate-700">{request.endDate}</p>
-                    </div>
-                    <div className="col-span-2 pt-2 border-t border-white/50">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Reason</p>
-                      <p className="text-sm font-medium text-slate-600 italic">"{request.reason}"</p>
-                    </div>
-                    <div className="col-span-2">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase mb-1">Approver</p>
-                      <p className="font-bold text-slate-700">{request.approver}</p>
-                    </div>
-                  </div>
+                {/* ── Main row ─────────────────────────────────── */}
+                <div
+                  className="grid items-center px-5 py-3.5 cursor-pointer transition-colors overflow-x-auto"
+                  style={{
+                    gridTemplateColumns: gridCols,
+                    background: isExpanded ? "var(--accent-bg)" : "transparent",
+                    minWidth: showEmployeeCol ? "820px" : "560px",
+                  }}
+                  onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = "var(--surface-2)" }}
+                  onMouseLeave={e => { e.currentTarget.style.background = isExpanded ? "var(--accent-bg)" : "transparent" }}
+                  onClick={() => setExpandedRow(isExpanded ? null : r.id)}>
 
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      {!isEmployee && (
-                        <Button
-                          size="sm"
-                          onClick={() => setShowLeaveBalance(request.id)}
-                          className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold h-10 shadow-lg shadow-blue-200"
-                        >
-                          <Info className="w-4 h-4 mr-2" />
-                          Check Balance
-                        </Button>
-                      )}
+                  {/* Employee — HR / Manager only */}
+                  {showEmployeeCol && (
+                    <p className="text-sm font-semibold truncate pr-2" style={{ color: "var(--t1)" }}>
+                      {r.employee}
+                    </p>
+                  )}
 
-                      {(isManager || isHR) && isPending && (
-                        <div className="flex flex-1 gap-2">
-                          <Button
-                            size="sm"
-                            onClick={() => handleLeaveAction(request.id, "approve")}
-                            disabled={isActionRunning}
-                            className="flex-1 bg-emerald-500 hover:bg-emerald-600 rounded-xl font-bold"
-                          >
-                            {activeActionId === `${request.id}:approve` ? (
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                              <Check className="w-4 h-4 mr-2" />
-                            )}
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleLeaveAction(request.id, "reject")}
-                            disabled={isActionRunning}
-                            className="flex-1 border-rose-200 text-rose-500 hover:bg-rose-50 rounded-xl font-bold"
-                          >
-                            {activeActionId === `${request.id}:reject` ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <X className="w-4 h-4" />
-                            )}
-                          </Button>
-                        </div>
-                      )}
+                  {/* Department — HR / Manager only */}
+                  {showEmployeeCol && (
+                    <span className="text-xs truncate" style={{ color: "var(--t3)" }}>
+                      {r.department}
+                    </span>
+                  )}
 
-                      {isEmployee && isPending && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleLeaveAction(request.id, "cancel")}
-                          disabled={isActionRunning}
-                          className="flex-1 text-rose-500 hover:bg-rose-50 rounded-xl font-bold"
-                        >
-                          {activeActionId === `${request.id}:cancel` ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Cancelling...
-                            </>
-                          ) : (
-                            "Cancel Request"
-                          )}
-                        </Button>
-                      )}
-                    </div>
+                  {/* Leave type */}
+                  <span className="text-xs font-semibold truncate pr-2" style={{ color: "var(--t2)" }}>
+                    {r.leaveType}
+                  </span>
+
+                  {/* Dates */}
+                  <span className="text-[11px] tabular-nums" style={{ color: "var(--t3)", fontFamily: "var(--font-mono)" }}>
+                    {r.startDate}
+                  </span>
+                  <span className="text-[11px] tabular-nums" style={{ color: "var(--t3)", fontFamily: "var(--font-mono)" }}>
+                    {r.endDate}
+                  </span>
+
+                  {/* Days */}
+                  <span className="text-center text-sm font-bold" style={{ color: "var(--t1)" }}>
+                    {r.days}
+                  </span>
+
+                  {/* Status */}
+                  <span className="flex justify-center">
+                    <span className="px-2.5 py-1 rounded-full text-[9px] font-bold whitespace-nowrap"
+                      style={{ background: sc.bg, color: sc.text }}>
+                      {r.status}
+                    </span>
+                  </span>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+
+                    {/* HR / Manager: Approve + Reject on pending */}
+                    {(isHR || isManager) && isPending && (
+                      <>
+                        <button onClick={() => handleAction(r.id, "approve")} disabled={isActioning}
+                          title="Approve"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:scale-105"
+                          style={{ background: "var(--green-bg)", color: "var(--green)" }}>
+                          {activeActionId === `${r.id}:approve`
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <Check className="w-3 h-3" />}
+                          Approve
+                        </button>
+                        <button onClick={() => handleAction(r.id, "reject")} disabled={isActioning}
+                          title="Reject"
+                          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:scale-105"
+                          style={{ background: "var(--red-bg)", color: "var(--red)" }}>
+                          {activeActionId === `${r.id}:reject`
+                            ? <Loader2 className="w-3 h-3 animate-spin" />
+                            : <X className="w-3 h-3" />}
+                          Reject
+                        </button>
+                      </>
+                    )}
+
+                    {/* Employee: Cancel own pending */}
+                    {isEmployee && isPending && (
+                      <button onClick={() => handleAction(r.id, "cancel")} disabled={isActioning}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all hover:scale-105"
+                        style={{ background: "var(--red-bg)", color: "var(--red)" }}>
+                        {activeActionId === `${r.id}:cancel`
+                          ? <Loader2 className="w-3 h-3 animate-spin" />
+                          : <X className="w-3 h-3" />}
+                        Cancel
+                      </button>
+                    )}
+
+                    {/* Expand toggle — always shown (balance + detail) */}
+                    <button
+                      onClick={() => setExpandedRow(isExpanded ? null : r.id)}
+                      title={isExpanded ? "Collapse" : "View balance & details"}
+                      className="p-1.5 rounded-lg ml-auto transition-all hover:scale-110"
+                      style={{
+                        background: isExpanded ? "var(--accent-bg)" : "var(--surface-3)",
+                        color:      isExpanded ? "var(--accent)"    : "var(--t4)",
+                      }}>
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                 </div>
+
+                {/* ── Expanded detail + balance ─────────────────── */}
+                <AnimatePresence>
+                  {isExpanded && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: "easeInOut" }}
+                      className="overflow-hidden">
+
+                      {/* Info strip: reason + approver + applied/decided */}
+                      <div className="px-6 py-3 flex flex-wrap gap-6"
+                        style={{ background: "var(--surface-2)", borderTop: "1px solid var(--b1)" }}>
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "var(--t4)" }}>Reason</p>
+                          <p className="text-xs italic" style={{ color: "var(--t2)" }}>"{r.reason}"</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "var(--t4)" }}>Approver</p>
+                          <p className="text-xs font-semibold" style={{ color: "var(--t2)" }}>{r.approver}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "var(--t4)" }}>Applied</p>
+                          <p className="text-xs tabular-nums" style={{ color: "var(--t2)", fontFamily: "var(--font-mono)" }}>{r.appliedDate}</p>
+                        </div>
+                        {r.decidedAt && (
+                          <div>
+                            <p className="text-[9px] font-bold uppercase tracking-wider mb-0.5" style={{ color: "var(--t4)" }}>Decided</p>
+                            <p className="text-xs tabular-nums" style={{ color: "var(--t2)", fontFamily: "var(--font-mono)" }}>{r.decidedAt}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Balance bars — from API response per employee */}
+                      <BalanceRow balance={r.balance} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
             )
           })}
-        </div>
+        </motion.div>
 
-        {filteredRequests.length === 0 && (
-          <div className="glass-card rounded-3xl border border-white/60 bg-white/50 backdrop-blur-md p-10 text-center">
-            <p className="text-lg font-black text-slate-800 mb-1">No leave requests found</p>
-            <p className="text-sm text-slate-500">
-              Try a different search term or create a new leave application.
-            </p>
-          </div>
+        {/* Footer count */}
+        {filtered.length > 0 && (
+          <p className="text-xs text-center pb-4" style={{ color: "var(--t4)" }}>
+            Showing {filtered.length} of {leaveRequests.length} records · {sessionCompany}
+          </p>
         )}
-
-        <AnimatePresence>
-          {showLeaveBalance && selectedRequest && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4"
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 20 }}
-                animate={{ scale: 1, y: 0 }}
-                className="w-full max-w-lg overflow-hidden glass-card rounded-[40px] border border-white bg-white shadow-2xl"
-              >
-                <div className="p-8 space-y-6">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h2 className="text-2xl font-black text-slate-900">Entitlement Check</h2>
-                      <p className="font-bold text-primary">{selectedRequest.employee}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      onClick={() => setShowLeaveBalance(null)}
-                      className="rounded-full h-10 w-10 p-0"
-                    >
-                      <X className="w-5 h-5" />
-                    </Button>
-                  </div>
-
-                  <div className="space-y-6">
-                    {Object.entries(selectedRequest.balance || {}).map(([type, data]) => {
-                      const percentage =
-                        data.total > 0 ? Math.round((data.used / data.total) * 100) : 0
-                      return (
-                        <div key={type} className="space-y-3">
-                          <div className="flex justify-between items-end">
-                            <span className="capitalize font-bold text-slate-700">{type} Leave</span>
-                            <span className="text-xs font-black text-slate-400">
-                              {data.used} / {data.total} DAYS
-                            </span>
-                          </div>
-                          <Progress value={percentage} className="h-2.5" />
-                        </div>
-                      )
-                    })}
-
-                    {!selectedRequest.balance && (
-                      <p className="text-sm font-semibold text-slate-500">
-                        Leave balance data is not available for this employee.
-                      </p>
-                    )}
-                  </div>
-
-                  <Button
-                    onClick={() => setShowLeaveBalance(null)}
-                    className="w-full h-12 rounded-2xl bg-slate-900 text-white font-bold"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {showNewRequest && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-50 flex items-center justify-center p-4"
-            >
-              <motion.div
-                initial={{ scale: 0.9, y: 24 }}
-                animate={{ scale: 1, y: 0 }}
-                className="w-full max-w-2xl overflow-hidden glass-card rounded-[36px] border border-white bg-white shadow-2xl"
-              >
-                <form onSubmit={handleCreateRequest} className="p-8 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-2xl font-black text-slate-900">New Leave Application</h2>
-                      <p className="text-sm font-medium text-slate-500 mt-1">
-                        Request will be routed within {sessionCompany}.
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setShowNewRequest(false)}
-                      className="rounded-full h-10 w-10 p-0"
-                    >
-                      <X className="w-5 h-5" />
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <label className="space-y-2">
-                      <span className="text-xs font-black uppercase tracking-[0.15em] text-slate-500">
-                        Leave Type
-                      </span>
-                      <select
-                        value={newRequest.leaveType}
-                        onChange={(event) =>
-                          setNewRequest((prev) => ({
-                            ...prev,
-                            leaveType: event.target.value,
-                          }))
-                        }
-                        className="w-full h-11 rounded-xl border border-white/70 bg-white px-3 text-sm font-semibold text-slate-700 outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                      >
-                        {LEAVE_TYPES.map((type) => (
-                          <option key={type} value={type}>
-                            {type}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <div className="grid grid-cols-2 gap-3 md:col-span-1">
-                      <label className="space-y-2">
-                        <span className="text-xs font-black uppercase tracking-[0.15em] text-slate-500">
-                          Start
-                        </span>
-                        <div className="relative">
-                          <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="date"
-                            value={newRequest.startDate}
-                            onChange={(event) =>
-                              setNewRequest((prev) => ({
-                                ...prev,
-                                startDate: event.target.value,
-                              }))
-                            }
-                            className="w-full h-11 rounded-xl border border-white/70 bg-white pl-10 pr-3 text-sm font-semibold text-slate-700 outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                          />
-                        </div>
-                      </label>
-                      <label className="space-y-2">
-                        <span className="text-xs font-black uppercase tracking-[0.15em] text-slate-500">
-                          End
-                        </span>
-                        <div className="relative">
-                          <Calendar className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                          <input
-                            type="date"
-                            value={newRequest.endDate}
-                            onChange={(event) =>
-                              setNewRequest((prev) => ({
-                                ...prev,
-                                endDate: event.target.value,
-                              }))
-                            }
-                            className="w-full h-11 rounded-xl border border-white/70 bg-white pl-10 pr-3 text-sm font-semibold text-slate-700 outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                          />
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  <label className="space-y-2 block">
-                    <span className="text-xs font-black uppercase tracking-[0.15em] text-slate-500">
-                      Reason
-                    </span>
-                    <textarea
-                      value={newRequest.reason}
-                      onChange={(event) =>
-                        setNewRequest((prev) => ({
-                          ...prev,
-                          reason: event.target.value,
-                        }))
-                      }
-                      rows={4}
-                      placeholder="Describe your leave reason..."
-                      className="w-full rounded-xl border border-white/70 bg-white px-4 py-3 text-sm font-medium text-slate-700 outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                    />
-                  </label>
-
-                  <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowNewRequest(false)}
-                      className="rounded-xl h-11 px-6"
-                      disabled={isSubmitting}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="rounded-xl h-11 px-6 bg-primary hover:bg-primary/90"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Submitting...
-                        </>
-                      ) : (
-                        "Submit Request"
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
-    </div>
+    </>
   )
 }
