@@ -14,69 +14,62 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   Menu, X, ChevronDown, User, LogOut, LayoutDashboard,
-  Sun, Moon, Search, Bell, ArrowRight,
+  Sun, Moon, Search, ArrowRight,
 } from "lucide-react"
+
+// ── NEW: Notification bell component ─────────────────────────────────────────
+import { NotificationBell } from "@/components/notification-panel"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SEARCH INDEX
-// Defined outside component → no re-creation on every render.
-// roles[] controls which role can discover each route.
-// keywords is a space-separated bag-of-words for fuzzy matching.
 // ─────────────────────────────────────────────────────────────────────────────
 const SEARCH_ROUTES = [
-  // Dashboard
   { title: "Dashboard Overview",  href: "/dashboard",                 category: "Dashboard",   roles: ["hr","manager","employee"], keywords: "home stats overview summary central" },
   { title: "Analytics",           href: "/dashboard/analytics",       category: "Dashboard",   roles: ["hr","manager"],            keywords: "metrics charts data analysis trends intelligence" },
   { title: "Reports Vault",       href: "/dashboard/reports",         category: "Dashboard",   roles: ["hr","manager"],            keywords: "export documents vault reports archive" },
-  // Employees
   { title: "All Employees",       href: "/employees",                 category: "Employees",   roles: ["hr","manager"],            keywords: "staff team list people directory workforce" },
   { title: "Add Employee",        href: "/employees/add",             category: "Employees",   roles: ["hr"],                      keywords: "new hire onboard recruit add employee" },
   { title: "Departments",         href: "/employees/departments",     category: "Employees",   roles: ["hr","manager"],            keywords: "teams groups divisions departments structure" },
   { title: "My Profile",          href: "/employees/profiles",        category: "Employees",   roles: ["hr","manager","employee"], keywords: "profile personal info account my details" },
   { title: "Payroll",             href: "/employees/payroll",         category: "Employees",   roles: ["hr"],                      keywords: "salary pay compensation benefits payslip payroll" },
-  // Attendance
   { title: "Time Tracking",       href: "/attendance/time-tracking",  category: "Attendance",  roles: ["hr","manager","employee"], keywords: "clock hours timesheet punch in out time" },
   { title: "Leave Requests",      href: "/attendance/leave-requests", category: "Attendance",  roles: ["hr","manager","employee"], keywords: "leave vacation sick off request annual casual" },
   { title: "Attendance Reports",  href: "/attendance/reports",        category: "Attendance",  roles: ["hr","manager"],            keywords: "attendance report summary logs history" },
   { title: "Shift Schedule",      href: "/attendance/shift_shedule",  category: "Attendance",  roles: ["hr","manager","employee"], keywords: "shift roster schedule timetable rota" },
-  // Performance
   { title: "Performance Reviews", href: "/performance/reviews",       category: "Performance", roles: ["hr","manager"],            keywords: "review appraisal evaluation grade score" },
   { title: "Goals & KPIs",        href: "/performance/goals",         category: "Performance", roles: ["hr","manager","employee"], keywords: "goals targets kpi objectives okr milestones" },
   { title: "Feedback",            href: "/performance/feedback",      category: "Performance", roles: ["hr","manager","employee"], keywords: "feedback 360 rating peer review comments" },
-  // Courses
   { title: "Engineering Courses", href: "/courses/engineering",       category: "Courses",     roles: ["hr","manager","employee"], keywords: "engineering tech coding training learn development" },
   { title: "Marketing Courses",   href: "/courses/marketing",         category: "Courses",     roles: ["hr","manager","employee"], keywords: "marketing training courses learn campaigns" },
   { title: "Sales Courses",       href: "/courses/sales",             category: "Courses",     roles: ["hr","manager","employee"], keywords: "sales training courses learn pipeline" },
   { title: "HR Courses",          href: "/courses/hr",                category: "Courses",     roles: ["hr","manager","employee"], keywords: "hr human resources training learn compliance" },
-  // Settings / Admin
   { title: "System Settings",     href: "/settings",                  category: "Settings",    roles: ["hr"],                      keywords: "config admin system settings configuration" },
   { title: "User Management",     href: "/settings/users",            category: "Settings",    roles: ["hr"],                      keywords: "users permissions roles access management" },
-  // Calendar
   { title: "Calendar & Events",   href: "/calendar",                  category: "Calendar",    roles: ["hr","manager","employee"], keywords: "calendar events schedule meetings planning" },
 ] as const
 
 type SearchRoute = typeof SEARCH_ROUTES[number]
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NAV STRUCTURE (unchanged)
+// NAV STRUCTURE
 // ─────────────────────────────────────────────────────────────────────────────
 const navigationItems = [
   {
     name: "Dashboard",
     items: [
-      { name: "Overview",  href: "/dashboard"          },
-      { name: "Analytics", href: "/dashboard/analytics" },
-      { name: "Reports",   href: "/dashboard/reports"   },
+      { name: "Overview",  href: "/dashboard"           },
+      { name: "Analytics", href: "/dashboard/analytics"  },
+      { name: "Reports",   href: "/dashboard/reports"    },
     ],
   },
   {
     name: "Employees",
     items: [
-      { name: "All Employees", href: "/employees"            },
-      { name: "Add Employee",  href: "/employees/add"        },
-      { name: "Departments",   href: "/employees/departments" },
-      { name: "Profiles",      href: "/employees/profiles"   },
-      { name: "Payroll",       href: "/employees/payroll"    },
+      { name: "All Employees", href: "/employees"             },
+      { name: "Add Employee",  href: "/employees/add"         },
+      { name: "Departments",   href: "/employees/departments"  },
+      { name: "Profiles",      href: "/employees/profiles"    },
+      { name: "Payroll",       href: "/employees/payroll"     },
     ],
   },
   {
@@ -108,42 +101,33 @@ const navigationItems = [
 ]
 
 export function Navigation() {
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [scrolled,   setScrolled]   = useState(false)
-  const [user,       setUser]       = useState<{ name: string; role: string } | null>(null)
-  const [mounted,    setMounted]    = useState(false)
+  const [mobileOpen,  setMobileOpen]  = useState(false)
+  const [scrolled,    setScrolled]    = useState(false)
+  const [user,        setUser]        = useState<{ name: string; role: string } | null>(null)
+  const [mounted,     setMounted]     = useState(false)
   const [companyName, setCompanyName] = useState("")
-  const [companyLogo, setCompanyLogo] = useState<string>("")   // ← NEW: dynamic logo
+  const [companyLogo, setCompanyLogo] = useState<string>("")
 
-  // ── Search state ──────────────────────────────────────────────────────────
-  const [searchOpen,    setSearchOpen]    = useState(false)
-  const [searchQuery,   setSearchQuery]   = useState("")
-  const [searchResults, setSearchResults] = useState<SearchRoute[]>([])
-  const [activeResultIdx, setActiveResultIdx] = useState(-1)  // keyboard nav
+  // ── Search ─────────────────────────────────────────────────────────────
+  const [searchOpen,      setSearchOpen]      = useState(false)
+  const [searchQuery,     setSearchQuery]     = useState("")
+  const [searchResults,   setSearchResults]   = useState<SearchRoute[]>([])
+  const [activeResultIdx, setActiveResultIdx] = useState(-1)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const searchInputRef     = useRef<HTMLInputElement>(null)
 
-  // ── Notification badge count (mock — replace with API later) ─────────────
-  const [notifCount] = useState(3)
-
-  const router             = useRouter()
-  const pathname           = usePathname()
+  const router              = useRouter()
+  const pathname            = usePathname()
   const { theme, setTheme } = useTheme()
 
   useEffect(() => setMounted(true), [])
 
   useEffect(() => {
-    const userName =
-      sessionStorage.getItem("userName") || localStorage.getItem("userName") || "User"
-    const userRole =
-      sessionStorage.getItem("userRole") || localStorage.getItem("userRole") || "Employee"
-    const isLoggedIn =
-      sessionStorage.getItem("isLoggedIn") === "true" ||
-      localStorage.getItem("isLoggedIn") === "true"
-    const company =
-      sessionStorage.getItem("companyName") || localStorage.getItem("companyName") || ""
-    const logo =
-      sessionStorage.getItem("companyLogo") || localStorage.getItem("companyLogo") || ""
+    const userName   = sessionStorage.getItem("userName")    || localStorage.getItem("userName")    || "User"
+    const userRole   = sessionStorage.getItem("userRole")    || localStorage.getItem("userRole")    || "Employee"
+    const isLoggedIn = sessionStorage.getItem("isLoggedIn") === "true" || localStorage.getItem("isLoggedIn") === "true"
+    const company    = sessionStorage.getItem("companyName") || localStorage.getItem("companyName") || ""
+    const logo       = sessionStorage.getItem("companyLogo") || localStorage.getItem("companyLogo") || ""
 
     if (isLoggedIn) setUser({ name: userName, role: userRole })
     setCompanyName(company)
@@ -154,37 +138,32 @@ export function Navigation() {
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
-  // ── Close search on click outside ────────────────────────────────────────
+  // Close search on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
-        closeSearch()
-      }
+      if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) closeSearch()
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  // ── Search filtering logic ────────────────────────────────────────────────
+  // Search filter
   const getFilteredResults = useCallback((query: string): SearchRoute[] => {
     if (!query.trim() || !user) return []
     const role  = user.role.toLowerCase()
     const lower = query.toLowerCase()
     return SEARCH_ROUTES.filter(route => {
-      // Role gate — employee cannot see HR-only or manager-only routes
-      if (!route.roles.includes(role)) return false
-      // Match title or keywords
+      if (!route.roles.includes(role as any)) return false
       return (
         route.title.toLowerCase().includes(lower) ||
         route.keywords.toLowerCase().includes(lower) ||
         route.category.toLowerCase().includes(lower)
       )
-    }).slice(0, 8) // max 8 results
+    }).slice(0, 8)
   }, [user])
 
   useEffect(() => {
-    const results = getFilteredResults(searchQuery)
-    setSearchResults(results)
+    setSearchResults(getFilteredResults(searchQuery))
     setActiveResultIdx(-1)
   }, [searchQuery, getFilteredResults])
 
@@ -207,20 +186,11 @@ export function Navigation() {
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") { closeSearch(); return }
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      setActiveResultIdx(i => Math.min(i + 1, searchResults.length - 1))
-    }
-    if (e.key === "ArrowUp") {
-      e.preventDefault()
-      setActiveResultIdx(i => Math.max(i - 1, -1))
-    }
-    if (e.key === "Enter" && activeResultIdx >= 0) {
-      navigateToResult(searchResults[activeResultIdx].href)
-    }
+    if (e.key === "ArrowDown") { e.preventDefault(); setActiveResultIdx(i => Math.min(i + 1, searchResults.length - 1)) }
+    if (e.key === "ArrowUp")   { e.preventDefault(); setActiveResultIdx(i => Math.max(i - 1, -1)) }
+    if (e.key === "Enter" && activeResultIdx >= 0) navigateToResult(searchResults[activeResultIdx].href)
   }
 
-  // Group results by category for display
   const groupedResults = searchResults.reduce<Record<string, SearchRoute[]>>((acc, r) => {
     acc[r.category] = [...(acc[r.category] || []), r]
     return acc
@@ -235,7 +205,6 @@ export function Navigation() {
   const getInitials = (name: string) =>
     name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2)
 
-  // ── Role visibility — unchanged ───────────────────────────────────────────
   const isVisible = (itemName: string) => {
     if (!user) return true
     const role = user.role.toLowerCase()
@@ -250,7 +219,7 @@ export function Navigation() {
   }
 
   const profileHref = user?.role?.toLowerCase() === "employee" ? "/employees/profiles" : "/settings/users"
-  const isDark = mounted ? theme === "dark" : false
+  const isDark      = mounted ? theme === "dark" : false
 
   const pillStyle: React.CSSProperties = {
     background: scrolled
@@ -258,7 +227,7 @@ export function Navigation() {
       : isDark ? "rgba(10,10,24,0.75)" : "rgba(238,237,248,0.72)",
     backdropFilter: "blur(20px) saturate(1.5)",
     WebkitBackdropFilter: "blur(20px) saturate(1.5)",
-    border: `1px solid var(--b1)`,
+    border: "1px solid var(--b1)",
     boxShadow: scrolled ? "var(--sh-md)" : "none",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   }
@@ -269,37 +238,28 @@ export function Navigation() {
         className="w-full max-w-7xl transition-all duration-300 rounded-[24px] px-5 py-3 flex items-center justify-between gap-4"
         style={pillStyle}
       >
-
-        {/* ── LOGO — dynamic company logo when available ─────────── */}
+        {/* ── LOGO ──────────────────────────────────────────────── */}
         <Link href="/dashboard" className="flex items-center gap-2.5 group shrink-0">
           {companyLogo ? (
-            /* Company-specific logo from session */
             <div className="w-8 h-8 rounded-lg overflow-hidden ring-1 ring-white/10 shadow-md shrink-0">
-              <img
-                src={companyLogo}
-                alt={companyName || "Company"}
-                className="w-full h-full object-contain"
-              />
+              <img src={companyLogo} alt={companyName || "Company"} className="w-full h-full object-contain" />
             </div>
           ) : (
-            /* Default Focus.HR icon */
-            <div
-              className="p-1.5 rounded-lg shadow-lg group-hover:rotate-12 transition-transform shrink-0"
-              style={{ background: "var(--accent)", boxShadow: "var(--glow-accent)" }}
-            >
+            <div className="p-1.5 rounded-lg shadow-lg group-hover:rotate-12 transition-transform shrink-0"
+              style={{ background: "var(--accent)", boxShadow: "var(--glow-accent)" }}>
               <LayoutDashboard className="w-5 h-5 text-white" />
             </div>
           )}
-          <span className="text-xl font-bold tracking-tight hidden sm:block" style={{ color: "var(--t1)", letterSpacing: "-0.03em" }}>
-            {companyName ? (
-              <span>{companyName}</span>
-            ) : (
-              <>Focus<span style={{ color: "var(--accent)" }}>.</span>HR</>
-            )}
+          <span className="text-xl font-bold tracking-tight hidden sm:block"
+            style={{ color: "var(--t1)", letterSpacing: "-0.03em" }}>
+            {companyName
+              ? <span>{companyName}</span>
+              : <>Focus<span style={{ color: "var(--accent)" }}>.</span>HR</>
+            }
           </span>
         </Link>
 
-        {/* ── DESKTOP NAV LINKS — unchanged role logic ────────────── */}
+        {/* ── DESKTOP NAV ───────────────────────────────────────── */}
         <div className="hidden md:flex items-center gap-0.5 flex-1 justify-center">
           {navigationItems.map((section) => {
             if (!isVisible(section.name)) return null
@@ -307,34 +267,28 @@ export function Navigation() {
             return (
               <DropdownMenu key={section.name}>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
+                  <Button variant="ghost"
                     className="rounded-xl font-semibold px-3.5 py-2 flex gap-1 items-center transition-colors text-sm"
                     style={{
                       color:      isSectionActive ? "var(--accent-t)" : "var(--t3)",
                       background: isSectionActive ? "var(--accent-bg)" : "transparent",
-                    }}
-                  >
+                    }}>
                     {section.name}
                     <ChevronDown className="w-3 h-3 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  className="w-52 p-2 rounded-2xl mt-2"
-                  style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-lg)" }}
-                >
+                <DropdownMenuContent className="w-52 p-2 rounded-2xl mt-2"
+                  style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-lg)" }}>
                   {section.items.map((item) => {
                     if (!isVisible(item.name)) return null
                     return (
                       <DropdownMenuItem key={item.name} asChild className="rounded-xl cursor-pointer">
-                        <Link
-                          href={item.href}
+                        <Link href={item.href}
                           className="w-full px-3 py-2 font-medium rounded-lg transition-colors text-sm"
                           style={{
                             color:      pathname === item.href ? "var(--accent-t)" : "var(--t2)",
                             background: pathname === item.href ? "var(--accent-bg)" : "transparent",
-                          }}
-                        >
+                          }}>
                           {item.name}
                         </Link>
                       </DropdownMenuItem>
@@ -346,64 +300,49 @@ export function Navigation() {
           })}
         </div>
 
-        {/* ── RIGHT CONTROLS ───────────────────────────────────────── */}
+        {/* ── RIGHT CONTROLS ────────────────────────────────────── */}
         <div className="flex items-center gap-2 shrink-0">
 
-          {/* ── GLOBAL SEARCH ─────────────────────────────────── */}
+          {/* Global Search */}
           <div ref={searchContainerRef} className="relative hidden md:block">
             <AnimatePresence initial={false} mode="wait">
               {searchOpen ? (
-                /* Expanded state */
-                <motion.div
-                  key="expanded"
-                  initial={{ width: 36, opacity: 0.5 }}
-                  animate={{ width: 220, opacity: 1 }}
+                <motion.div key="expanded"
+                  initial={{ width: 36, opacity: 0.5 }} animate={{ width: 220, opacity: 1 }}
                   exit={{ width: 36, opacity: 0 }}
                   transition={{ type: "spring", stiffness: 300, damping: 26 }}
                   className="flex items-center rounded-xl overflow-visible"
-                  style={{ background: "var(--surface-3)", border: "1px solid var(--b2)" }}
-                >
+                  style={{ background: "var(--surface-3)", border: "1px solid var(--b2)" }}>
                   <div className="p-2 shrink-0" style={{ color: "var(--t4)" }}>
                     <Search className="w-3.5 h-3.5" />
                   </div>
-                  <input
-                    ref={searchInputRef}
-                    value={searchQuery}
+                  <input ref={searchInputRef} value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                     onKeyDown={handleSearchKeyDown}
                     placeholder="Search features..."
                     className="flex-1 bg-transparent text-sm outline-none pr-2 min-w-0"
                     style={{ color: "var(--t1)", caretColor: "var(--accent)", fontFamily: "var(--font-sans)" }}
-                    autoFocus
-                  />
-                  <button
-                    onClick={closeSearch}
-                    className="p-1.5 mr-1 rounded-lg transition-colors"
+                    autoFocus />
+                  <button onClick={closeSearch} className="p-1.5 mr-1 rounded-lg transition-colors"
                     style={{ color: "var(--t4)" }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--t2)"}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--t4)"}
-                  >
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--t4)"}>
                     <X className="w-3 h-3" />
                   </button>
                 </motion.div>
               ) : (
-                /* Collapsed state — icon only */
-                <motion.button
-                  key="collapsed"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                <motion.button key="collapsed"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   onClick={openSearch}
                   className="p-2 rounded-xl transition-all hover:scale-105"
                   style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t3)" }}
-                  aria-label="Search"
-                >
+                  aria-label="Search">
                   <Search className="w-4 h-4" />
                 </motion.button>
               )}
             </AnimatePresence>
 
-            {/* ── Search results dropdown ─────────────────────── */}
+            {/* Search results dropdown */}
             <AnimatePresence>
               {searchOpen && (
                 <motion.div
@@ -412,10 +351,8 @@ export function Navigation() {
                   exit={{ opacity: 0, y: -8, scale: 0.97 }}
                   transition={{ type: "spring", stiffness: 320, damping: 26 }}
                   className="absolute top-full mt-2 right-0 w-80 rounded-2xl overflow-hidden"
-                  style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-xl)", zIndex: 100 }}
-                >
+                  style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-xl)", zIndex: 100 }}>
                   {searchQuery.trim() === "" ? (
-                    /* Empty state */
                     <div className="px-5 py-6 text-center">
                       <Search className="w-8 h-8 mx-auto mb-3" style={{ color: "var(--b2)" }} />
                       <p className="text-xs font-semibold" style={{ color: "var(--t4)" }}>
@@ -426,13 +363,13 @@ export function Navigation() {
                       </p>
                     </div>
                   ) : searchResults.length === 0 ? (
-                    /* No results */
                     <div className="px-5 py-6 text-center">
-                      <p className="text-sm font-semibold" style={{ color: "var(--t3)" }}>No results for "{searchQuery}"</p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--t3)" }}>
+                        No results for "{searchQuery}"
+                      </p>
                       <p className="text-[10px] mt-1" style={{ color: "var(--t4)" }}>Try different keywords</p>
                     </div>
                   ) : (
-                    /* Grouped results */
                     <div className="max-h-80 overflow-y-auto py-2">
                       {Object.entries(groupedResults).map(([category, routes]) => (
                         <div key={category}>
@@ -442,20 +379,18 @@ export function Navigation() {
                               {category}
                             </span>
                           </div>
-                          {routes.map((route, i) => {
+                          {routes.map((route) => {
                             const globalIdx = searchResults.indexOf(route)
                             const isActive  = globalIdx === activeResultIdx
                             return (
-                              <button
-                                key={route.href}
+                              <button key={route.href}
                                 onClick={() => navigateToResult(route.href)}
                                 onMouseEnter={() => setActiveResultIdx(globalIdx)}
                                 className="w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors"
                                 style={{
                                   background: isActive ? "var(--accent-bg)" : "transparent",
-                                  color:      isActive ? "var(--accent-t)" : "var(--t2)",
-                                }}
-                              >
+                                  color:      isActive ? "var(--accent-t)"  : "var(--t2)",
+                                }}>
                                 <div className="w-1.5 h-1.5 rounded-full shrink-0"
                                   style={{ background: isActive ? "var(--accent)" : "var(--b2)" }} />
                                 <span className="text-sm font-medium flex-1">{route.title}</span>
@@ -472,26 +407,20 @@ export function Navigation() {
             </AnimatePresence>
           </div>
 
-          {/* ── NOTIFICATION BELL ─────────────────────────────────── */}
-          <Link href="/dashboard" className="relative p-2 rounded-xl transition-all hover:scale-105"
-            style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t3)" }}>
-            <Bell className="w-4 h-4" />
-            {notifCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-white flex items-center justify-center text-[8px] font-bold"
-                style={{ background: "var(--red)", fontSize: "8px", lineHeight: 1 }}>
-                {notifCount}
-              </span>
-            )}
-          </Link>
+          {/* ── NOTIFICATION BELL — now functional ────────────────
+              Replaced the old <Link><Bell /></Link> with NotificationBell.
+              Clicking opens the slide panel; "View All Notifications"
+              inside the panel links to /attendance/leave-requests.
+          ─────────────────────────────────────────────────────── */}
+          <NotificationBell userRole={user?.role?.toLowerCase() ?? "employee"} />
 
-          {/* ── THEME TOGGLE — unchanged ──────────────────────────── */}
+          {/* Theme toggle */}
           {mounted && (
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className="p-2 rounded-xl transition-all hover:scale-110"
               style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t3)" }}
-              aria-label="Toggle theme"
-            >
+              aria-label="Toggle theme">
               {isDark
                 ? <Sun  className="w-4 h-4" style={{ color: "var(--amber)" }} />
                 : <Moon className="w-4 h-4" style={{ color: "var(--blue)"  }} />
@@ -499,23 +428,20 @@ export function Navigation() {
             </button>
           )}
 
-          {/* ── USER DROPDOWN — CSS variable compliant ────────────── */}
+          {/* User dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
                 className="flex items-center gap-2 p-1 pl-3 rounded-full transition-all"
                 style={{ background: "var(--surface-2)", border: "1px solid var(--b1)" }}
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = "var(--sh-sm)"}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = "none"}
-              >
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = "none"}>
                 <div className="text-right hidden sm:block">
                   <p className="text-[11px] font-semibold leading-tight" style={{ color: "var(--t2)" }}>
                     {user ? user.name : "Guest"}
                   </p>
                   {companyName && (
-                    <p className="text-[9px] leading-tight" style={{ color: "var(--t4)" }}>
-                      {companyName}
-                    </p>
+                    <p className="text-[9px] leading-tight" style={{ color: "var(--t4)" }}>{companyName}</p>
                   )}
                 </div>
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
@@ -524,47 +450,35 @@ export function Navigation() {
                 </div>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-52 p-2 rounded-2xl mt-2"
-              style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-lg)" }}
-            >
-              {/* User info header */}
+            <DropdownMenuContent align="end" className="w-52 p-2 rounded-2xl mt-2"
+              style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-lg)" }}>
               <div className="px-3 py-2 mb-1" style={{ borderBottom: "1px solid var(--b1)" }}>
                 <p className="text-sm font-semibold" style={{ color: "var(--t1)" }}>{user?.name}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider mt-0.5"
-                  style={{ color: "var(--accent-t)" }}>
-                  {user?.role}
-                </p>
+                  style={{ color: "var(--accent-t)" }}>{user?.role}</p>
               </div>
               <DropdownMenuItem asChild className="rounded-xl gap-2 cursor-pointer font-medium"
                 style={{ color: "var(--t2)" }}>
-                <Link href={profileHref}>
-                  <User className="w-4 h-4" /> Profile
-                </Link>
+                <Link href={profileHref}><User className="w-4 h-4" /> Profile</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={handleLogout}
+              <DropdownMenuItem onClick={handleLogout}
                 className="rounded-xl gap-2 cursor-pointer font-medium"
-                style={{ color: "var(--red)" }}
-              >
+                style={{ color: "var(--red)" }}>
                 <LogOut className="w-4 h-4" /> Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* ── MOBILE TOGGLE ─────────────────────────────────────── */}
-          <button
-            className="md:hidden p-2 rounded-xl transition-colors"
+          {/* Mobile toggle */}
+          <button className="md:hidden p-2 rounded-xl transition-colors"
             style={{ background: "var(--accent-bg)", color: "var(--accent-t)" }}
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
+            onClick={() => setMobileOpen(!mobileOpen)}>
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </nav>
 
-      {/* ── MOBILE MENU — with search ────────────────────────────────── */}
+      {/* ── MOBILE MENU ──────────────────────────────────────────────── */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -573,20 +487,17 @@ export function Navigation() {
             exit={{ opacity: 0, scale: 0.95, y: -8 }}
             transition={{ type: "spring", stiffness: 320, damping: 26 }}
             className="fixed inset-x-4 top-24 z-40 md:hidden p-6 rounded-[32px] shadow-2xl overflow-y-auto max-h-[80vh]"
-            style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", backdropFilter: "blur(24px)", boxShadow: "var(--sh-lg)" }}
-          >
+            style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", backdropFilter: "blur(24px)", boxShadow: "var(--sh-lg)" }}>
+
             {/* Mobile search */}
             <div className="mb-6">
               <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
                 style={{ background: "var(--surface-2)", border: "1px solid var(--b1)" }}>
                 <Search className="w-4 h-4 shrink-0" style={{ color: "var(--t4)" }} />
-                <input
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
+                <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                   placeholder="Search..."
                   className="flex-1 bg-transparent text-sm outline-none"
-                  style={{ color: "var(--t1)", caretColor: "var(--accent)" }}
-                />
+                  style={{ color: "var(--t1)", caretColor: "var(--accent)" }} />
               </div>
               {searchResults.length > 0 && (
                 <div className="mt-2 rounded-2xl overflow-hidden"
@@ -623,8 +534,7 @@ export function Navigation() {
                             className="p-3 rounded-xl text-sm font-semibold transition-all"
                             style={{ background: "var(--surface-2)", color: "var(--t2)" }}
                             onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "var(--accent-t)"}
-                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--t2)"}
-                          >
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "var(--t2)"}>
                             {item.name}
                           </Link>
                         )

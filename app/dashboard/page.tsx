@@ -13,8 +13,11 @@ import { motion, AnimatePresence } from "framer-motion"
 import AuthGuard from "../../components/AuthGuard"
 import Chatbot from "../../components/ui/chatbot"
 
+// ── CHANGE 1: Import NotificationPanel ───────────────────────────────────────
+
+
 // ─────────────────────────────────────────────────────────────────────────────
-// MOCK DATA — all widgets (replace with API calls when backend is ready)
+// MOCK DATA
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CELEBRATIONS = [
@@ -97,11 +100,10 @@ const DOCUMENTS: Record<string, Array<{ id: string; title: string; meta: string;
 // CELEBRATIONS STRIP
 // ─────────────────────────────────────────────────────────────────────────────
 function CelebrationsStrip() {
-  const [wished, setWished]       = useState<Set<number>>(new Set())
+  const [wished, setWished] = useState<Set<number>>(new Set())
   const todayItems    = CELEBRATIONS.filter(c => c.date === "Today")
   const tomorrowItems = CELEBRATIONS.filter(c => c.date === "Tomorrow")
   if (todayItems.length === 0 && tomorrowItems.length === 0) return null
-
   const handleWish = (id: number) => setWished(prev => new Set([...prev, id]))
 
   return (
@@ -109,9 +111,7 @@ function CelebrationsStrip() {
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.35 }}
       className="rounded-[22px] overflow-hidden"
-      style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}
-    >
-      {/* Header */}
+      style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
       <div className="px-6 py-4 flex items-center gap-3"
         style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--b1)" }}>
         <div className="p-2 rounded-xl" style={{ background: "rgba(251,191,36,0.15)" }}>
@@ -130,8 +130,6 @@ function CelebrationsStrip() {
           </span>
         </div>
       </div>
-
-      {/* Scrollable row */}
       <div className="flex gap-4 overflow-x-auto px-6 py-4 no-scrollbar">
         {CELEBRATIONS.map(c => (
           <motion.div key={c.id}
@@ -139,7 +137,6 @@ function CelebrationsStrip() {
             transition={{ delay: c.id * 0.06 }}
             className="flex items-center gap-3 px-4 py-3 rounded-2xl shrink-0"
             style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", minWidth: "260px" }}>
-            {/* Avatar */}
             <div className="relative shrink-0">
               <div className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold"
                 style={{ background: c.type === "birthday"
@@ -152,26 +149,22 @@ function CelebrationsStrip() {
                 {c.type === "birthday" ? "🎂" : "⭐"}
               </div>
             </div>
-            {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate" style={{ color: "var(--t1)" }}>{c.name}</p>
               <p className="text-[10px]" style={{ color: "var(--t4)" }}>
                 {c.type === "birthday" ? "Birthday" : `${c.years}-Year Anniversary`} · {c.date}
               </p>
             </div>
-            {/* WISH button */}
             {c.date === "Today" && (
               <AnimatePresence mode="wait">
                 {wished.has(c.id) ? (
-                  <motion.div key="wished"
-                    initial={{ scale: 0.5 }} animate={{ scale: 1 }}
+                  <motion.div key="wished" initial={{ scale: 0.5 }} animate={{ scale: 1 }}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-bold flex items-center gap-1"
                     style={{ background: "var(--green-bg)", color: "var(--green)" }}>
                     <Check className="w-3 h-3" /> Wished!
                   </motion.div>
                 ) : (
-                  <motion.button key="wish"
-                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                  <motion.button key="wish" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                     onClick={() => handleWish(c.id)}
                     className="px-3 py-1.5 rounded-xl text-[10px] font-bold text-white transition-all"
                     style={{ background: c.type === "birthday" ? "var(--amber)" : "var(--accent)" }}>
@@ -188,20 +181,17 @@ function CelebrationsStrip() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ANNOUNCEMENTS PANEL (CEO Speaks + HR Announcements)
+// ANNOUNCEMENTS PANEL
 // ─────────────────────────────────────────────────────────────────────────────
 function AnnouncementsPanel({ isHR }: { isHR: boolean }) {
   const [activeTab, setActiveTab] = useState<"ceo"|"hr">("hr")
   const items = activeTab === "ceo" ? ANNOUNCEMENTS.ceo : ANNOUNCEMENTS.hr
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.4 }}
       className="rounded-[22px] overflow-hidden h-full"
       style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
-
-      {/* Header */}
       <div className="px-6 py-4 flex items-center gap-3"
         style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--b1)" }}>
         <div className="p-2 rounded-xl" style={{ background: "var(--blue-bg)" }}>
@@ -212,20 +202,12 @@ function AnnouncementsPanel({ isHR }: { isHR: boolean }) {
         </div>
         {isHR && (
           <button className="px-3 py-1.5 rounded-xl text-[10px] font-bold text-white"
-            style={{ background: "var(--accent)" }}>
-            + Post
-          </button>
+            style={{ background: "var(--accent)" }}>+ Post</button>
         )}
       </div>
-
-      {/* Tabs */}
       <div className="flex" style={{ borderBottom: "1px solid var(--b1)" }}>
-        {[
-          { key: "ceo", label: "CEO Speaks" },
-          { key: "hr",  label: "HR Announcement" },
-        ].map(tab => (
-          <button key={tab.key}
-            onClick={() => setActiveTab(tab.key as "ceo"|"hr")}
+        {[{ key: "ceo", label: "CEO Speaks" }, { key: "hr", label: "HR Announcement" }].map(tab => (
+          <button key={tab.key} onClick={() => setActiveTab(tab.key as "ceo"|"hr")}
             className="flex-1 py-3 text-xs font-bold transition-all relative"
             style={{ color: activeTab === tab.key ? "var(--accent-t)" : "var(--t4)" }}>
             {tab.label}
@@ -236,18 +218,12 @@ function AnnouncementsPanel({ isHR }: { isHR: boolean }) {
           </button>
         ))}
       </div>
-
-      {/* Content */}
       <div className="p-5 space-y-3 overflow-y-auto" style={{ maxHeight: "260px" }}>
         <AnimatePresence mode="wait">
-          <motion.div key={activeTab}
-            initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}
-            className="space-y-3">
+          <motion.div key={activeTab} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="space-y-3">
             {items.length === 0 ? (
-              <div className="py-10 text-center">
-                <p className="text-sm" style={{ color: "var(--t4)" }}>No records found</p>
-              </div>
+              <div className="py-10 text-center"><p className="text-sm" style={{ color: "var(--t4)" }}>No records found</p></div>
             ) : items.map(item => (
               <div key={item.id} className="p-4 rounded-[16px] transition-all cursor-pointer"
                 style={{ background: "var(--surface-2)", border: "1px solid var(--b1)" }}
@@ -278,20 +254,15 @@ function ThingsToDoPanel({ userRole }: { userRole: string }) {
   const [done, setDone] = useState<Set<string>>(new Set())
   const tasks = THINGS_TO_DO[userRole] || THINGS_TO_DO.employee
   const toggle = (id: string) => setDone(prev => {
-    const next = new Set(prev)
-    next.has(id) ? next.delete(id) : next.add(id)
-    return next
+    const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next
   })
   const completedCount = tasks.filter(t => done.has(t.id)).length
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.45 }}
       className="rounded-[22px] overflow-hidden h-full"
       style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
-
-      {/* Header */}
       <div className="px-6 py-4 flex items-center gap-3"
         style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--b1)" }}>
         <div className="p-2 rounded-xl" style={{ background: "var(--purple-bg)" }}>
@@ -299,46 +270,35 @@ function ThingsToDoPanel({ userRole }: { userRole: string }) {
         </div>
         <div className="flex-1">
           <h3 className="text-sm font-bold" style={{ color: "var(--t1)", letterSpacing: "-0.015em" }}>Things To Do</h3>
-          <p className="text-[10px] font-semibold" style={{ color: "var(--t4)" }}>
-            {completedCount}/{tasks.length} completed
-          </p>
+          <p className="text-[10px] font-semibold" style={{ color: "var(--t4)" }}>{completedCount}/{tasks.length} completed</p>
         </div>
       </div>
-
-      {/* Progress bar */}
       <div className="px-6 pt-4 pb-2">
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surface-3)" }}>
-          <motion.div className="h-full rounded-full"
-            style={{ background: "var(--purple)" }}
+          <motion.div className="h-full rounded-full" style={{ background: "var(--purple)" }}
             animate={{ width: `${tasks.length > 0 ? (completedCount / tasks.length) * 100 : 0}%` }}
             transition={{ duration: 0.4, ease: "easeOut" }} />
         </div>
       </div>
-
-      {/* Tasks */}
       <div className="px-5 pb-5 space-y-2 overflow-y-auto" style={{ maxHeight: "260px" }}>
         {tasks.map((task, i) => (
-          <motion.div key={task.id}
-            initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
+          <motion.div key={task.id} initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.5 + i * 0.06 }}>
             <Link href={task.href}>
               <div className="flex items-center gap-3 px-3 py-3 rounded-[14px] group cursor-pointer transition-all"
                 onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}>
-                {/* Checkbox */}
                 <button onClick={e => { e.preventDefault(); toggle(task.id) }}
                   className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all"
                   style={{ borderColor: done.has(task.id) ? "var(--purple)" : "var(--b2)",
                     background: done.has(task.id) ? "var(--purple)" : "transparent" }}>
                   {done.has(task.id) && <Check className="w-3 h-3 text-white" />}
                 </button>
-                {/* Task text */}
                 <p className="text-sm flex-1 leading-tight transition-all"
                   style={{ color: done.has(task.id) ? "var(--t4)" : "var(--t2)",
                     textDecoration: done.has(task.id) ? "line-through" : "none" }}>
                   {task.task}
                 </p>
-                {/* Priority */}
                 <span className="shrink-0 px-2 py-0.5 rounded-full text-[8px] font-bold uppercase"
                   style={{
                     background: task.priority === "high" ? "var(--red-bg)" : task.priority === "medium" ? "var(--amber-bg)" : "var(--green-bg)",
@@ -356,21 +316,21 @@ function ThingsToDoPanel({ userRole }: { userRole: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NOTIFICATIONS + APPROVALS
+// NOTIFICATIONS + APPROVALS PANEL
+// ── CHANGE 2: Accept onViewAll callback prop ──────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
-function NotificationsPanel({ userRole }: { userRole: string }) {
-  const [tab,      setTab]      = useState<"notifications"|"approvals">("notifications")
-  const [notifs,   setNotifs]   = useState(NOTIFICATIONS_DATA)
+function NotificationsPanel({ userRole, onViewAll }: { userRole: string; onViewAll: () => void }) {
+  const [tab,       setTab]      = useState<"notifications"|"approvals">("notifications")
+  const [notifs,    setNotifs]   = useState(NOTIFICATIONS_DATA)
   const [approvals, setApprovals] = useState(APPROVALS_DATA)
-  const unread = notifs.filter(n => !n.read).length
-  const isHR  = userRole === "hr"
+  const unread    = notifs.filter(n => !n.read).length
+  const isHR      = userRole === "hr"
   const isManager = userRole === "manager"
 
   const markRead = (id: string) => setNotifs(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
       className="rounded-[22px] overflow-hidden h-full"
       style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
@@ -381,8 +341,7 @@ function NotificationsPanel({ userRole }: { userRole: string }) {
           { key: "notifications", label: "Notifications", badge: unread },
           { key: "approvals",     label: "Approvals",     badge: (isHR || isManager) ? approvals.length : 0 },
         ].map(t => (
-          <button key={t.key}
-            onClick={() => setTab(t.key as any)}
+          <button key={t.key} onClick={() => setTab(t.key as any)}
             className="flex-1 py-3.5 text-xs font-bold transition-all flex items-center justify-center gap-2 relative"
             style={{ color: tab === t.key ? "var(--accent-t)" : "var(--t4)" }}>
             {t.label}
@@ -404,17 +363,14 @@ function NotificationsPanel({ userRole }: { userRole: string }) {
       <div className="overflow-y-auto" style={{ maxHeight: "320px" }}>
         <AnimatePresence mode="wait">
           {tab === "notifications" ? (
-            <motion.div key="notifs"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div key="notifs" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="divide-y" style={{ borderColor: "var(--b1)" }}>
               {notifs.map(n => (
-                <div key={n.id}
-                  onClick={() => markRead(n.id)}
+                <div key={n.id} onClick={() => markRead(n.id)}
                   className="flex gap-3 px-5 py-4 cursor-pointer transition-all group"
                   style={{ background: !n.read ? "var(--accent-bg)" : "transparent" }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = !n.read ? "var(--accent-bg)" : "transparent"}>
-                  {/* Dot */}
                   <div className="relative flex shrink-0 mt-1.5">
                     {!n.read && (
                       <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full opacity-60"
@@ -432,8 +388,7 @@ function NotificationsPanel({ userRole }: { userRole: string }) {
               ))}
             </motion.div>
           ) : (
-            <motion.div key="approvals"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="approvals" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {(!isHR && !isManager) ? (
                 <div className="py-12 text-center px-6">
                   <BadgeCheck className="w-10 h-10 mx-auto mb-3" style={{ color: "var(--b2)" }} />
@@ -457,21 +412,15 @@ function NotificationsPanel({ userRole }: { userRole: string }) {
                       </p>
                     </div>
                     <span className="text-[9px] px-2 py-1 rounded-full font-bold shrink-0"
-                      style={{ background: "var(--amber-bg)", color: "var(--amber)" }}>
-                      PENDING
-                    </span>
+                      style={{ background: "var(--amber-bg)", color: "var(--amber)" }}>PENDING</span>
                   </div>
                   <div className="flex gap-2">
                     <Link href="/attendance/leave-requests"
                       className="flex-1 py-1.5 rounded-lg text-[10px] font-bold text-center text-white"
-                      style={{ background: "var(--green)" }}>
-                      Approve
-                    </Link>
+                      style={{ background: "var(--green)" }}>Approve</Link>
                     <Link href="/attendance/leave-requests"
                       className="flex-1 py-1.5 rounded-lg text-[10px] font-bold text-center"
-                      style={{ background: "var(--red-bg)", color: "var(--red)" }}>
-                      Decline
-                    </Link>
+                      style={{ background: "var(--red-bg)", color: "var(--red)" }}>Decline</Link>
                   </div>
                 </div>
               ))}
@@ -480,14 +429,23 @@ function NotificationsPanel({ userRole }: { userRole: string }) {
         </AnimatePresence>
       </div>
 
-      {/* Footer link */}
+      {/* ── CHANGE 3: Footer — button calls onViewAll instead of Link to leave-requests ── */}
       <div className="px-5 py-3" style={{ borderTop: "1px solid var(--b1)", background: "var(--surface-2)" }}>
-        <Link href="/attendance/leave-requests"
-          className="flex items-center justify-center gap-2 text-xs font-semibold w-full"
-          style={{ color: "var(--accent-t)" }}>
-          View All {tab === "approvals" ? "Leave Requests" : "Notifications"}
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
+        {tab === "notifications" ? (
+          <button onClick={onViewAll}
+            className="flex items-center justify-center gap-2 text-xs font-semibold w-full transition-opacity hover:opacity-70"
+            style={{ color: "var(--accent-t)" }}>
+            View All Notifications
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
+        ) : (
+          <Link href="/attendance/leave-requests"
+            className="flex items-center justify-center gap-2 text-xs font-semibold w-full"
+            style={{ color: "var(--accent-t)" }}>
+            View All Leave Requests
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        )}
       </div>
     </motion.div>
   )
@@ -499,14 +457,11 @@ function NotificationsPanel({ userRole }: { userRole: string }) {
 function DocumentsAndShare({ userRole, isHR }: { userRole: string; isHR: boolean }) {
   const docs = DOCUMENTS[userRole] || DOCUMENTS.employee
   const [shareText, setShareText] = useState("")
-  const [shared, setShared] = useState(false)
+  const [shared,    setShared]    = useState(false)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-      {/* Important Documents */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.55 }}
         className="rounded-[22px] overflow-hidden"
         style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
@@ -523,8 +478,7 @@ function DocumentsAndShare({ userRole, isHR }: { userRole: string; isHR: boolean
         </div>
         <div className="p-3">
           {docs.map((doc, i) => (
-            <motion.div key={doc.id}
-              initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+            <motion.div key={doc.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.6 + i * 0.06 }}>
               <Link href={doc.href}
                 className="flex items-center gap-3 px-3 py-3 rounded-[14px] group transition-all"
@@ -546,9 +500,7 @@ function DocumentsAndShare({ userRole, isHR }: { userRole: string; isHR: boolean
         </div>
       </motion.div>
 
-      {/* Share Information */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
         className="rounded-[22px] overflow-hidden"
         style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
@@ -560,73 +512,55 @@ function DocumentsAndShare({ userRole, isHR }: { userRole: string; isHR: boolean
           <h3 className="text-sm font-bold" style={{ color: "var(--t1)", letterSpacing: "-0.015em" }}>Share Information</h3>
         </div>
         <div className="p-5">
-          {(isHR || true) ? (
-            /* Everyone can share info */
-            <>
-              <textarea
-                value={shareText}
-                onChange={e => setShareText(e.target.value)}
-                placeholder="Share an update with your team..."
-                rows={4}
-                className="w-full text-sm rounded-2xl px-4 py-3 resize-none outline-none transition-all"
-                style={{
-                  background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t1)",
-                  fontFamily: "var(--font-sans)", caretColor: "var(--accent)",
-                }}
-                onFocus={e => (e.currentTarget as HTMLElement).style.borderColor = "var(--b2)"}
-                onBlur={e => (e.currentTarget as HTMLElement).style.borderColor = "var(--b1)"}
-              />
-              <div className="mt-3 flex items-center gap-2 justify-between">
-                <p className="text-[10px]" style={{ color: "var(--t4)" }}>
-                  Visible to: {isHR ? "All employees" : "Your team"}
-                </p>
-                <AnimatePresence mode="wait">
-                  {shared ? (
-                    <motion.span key="ok"
-                      initial={{ scale: 0.7 }} animate={{ scale: 1 }}
-                      className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"
-                      style={{ background: "var(--green-bg)", color: "var(--green)" }}>
-                      <Check className="w-3 h-3" /> Shared!
-                    </motion.span>
-                  ) : (
-                    <motion.button key="share"
-                      whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                      onClick={() => { if (shareText.trim()) { setShared(true); setTimeout(() => setShared(false), 2500); setShareText("") }}}
-                      className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all"
-                      style={{ background: shareText.trim() ? "var(--green)" : "var(--surface-3)",
-                        color: shareText.trim() ? "white" : "var(--t4)" }}>
-                      Post Update
-                    </motion.button>
-                  )}
-                </AnimatePresence>
+          <textarea value={shareText} onChange={e => setShareText(e.target.value)}
+            placeholder="Share an update with your team..."
+            rows={4}
+            className="w-full text-sm rounded-2xl px-4 py-3 resize-none outline-none transition-all"
+            style={{ background: "var(--surface-2)", border: "1px solid var(--b1)", color: "var(--t1)",
+              fontFamily: "var(--font-sans)", caretColor: "var(--accent)" }}
+            onFocus={e => (e.currentTarget as HTMLElement).style.borderColor = "var(--b2)"}
+            onBlur={e => (e.currentTarget as HTMLElement).style.borderColor = "var(--b1)"} />
+          <div className="mt-3 flex items-center gap-2 justify-between">
+            <p className="text-[10px]" style={{ color: "var(--t4)" }}>
+              Visible to: {isHR ? "All employees" : "Your team"}
+            </p>
+            <AnimatePresence mode="wait">
+              {shared ? (
+                <motion.span key="ok" initial={{ scale: 0.7 }} animate={{ scale: 1 }}
+                  className="px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5"
+                  style={{ background: "var(--green-bg)", color: "var(--green)" }}>
+                  <Check className="w-3 h-3" /> Shared!
+                </motion.span>
+              ) : (
+                <motion.button key="share" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+                  onClick={() => { if (shareText.trim()) { setShared(true); setTimeout(() => setShared(false), 2500); setShareText("") }}}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all"
+                  style={{ background: shareText.trim() ? "var(--green)" : "var(--surface-3)",
+                    color: shareText.trim() ? "white" : "var(--t4)" }}>
+                  Post Update
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+          <div className="mt-4 space-y-2">
+            <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--t4)" }}>Recent</p>
+            {[
+              { user: "HR Team",      msg: "Q1 appraisal forms are now open.",        time: "2h ago" },
+              { user: "John Manager", msg: "Engineering sprint #14 starts Monday.",   time: "1d ago" },
+            ].map((item, i) => (
+              <div key={i} className="px-3 py-2.5 rounded-[14px] flex gap-3"
+                style={{ background: "var(--surface-2)" }}>
+                <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white text-[8px] font-bold"
+                  style={{ background: i === 0 ? "var(--accent)" : "var(--blue)" }}>
+                  {item.user[0]}
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold" style={{ color: "var(--t3)" }}>{item.user} · {item.time}</p>
+                  <p className="text-xs" style={{ color: "var(--t2)" }}>{item.msg}</p>
+                </div>
               </div>
-
-              {/* Sample shared items */}
-              <div className="mt-4 space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--t4)" }}>Recent</p>
-                {[
-                  { user: "HR Team", msg: "Q1 appraisal forms are now open.", time: "2h ago" },
-                  { user: "John Manager", msg: "Engineering sprint #14 starts Monday.", time: "1d ago" },
-                ].map((item, i) => (
-                  <div key={i} className="px-3 py-2.5 rounded-[14px] flex gap-3"
-                    style={{ background: "var(--surface-2)" }}>
-                    <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-white text-[8px] font-bold"
-                      style={{ background: i === 0 ? "var(--accent)" : "var(--blue)" }}>
-                      {item.user[0]}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-semibold" style={{ color: "var(--t3)" }}>{item.user} · {item.time}</p>
-                      <p className="text-xs" style={{ color: "var(--t2)" }}>{item.msg}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="py-12 text-center">
-              <p className="text-sm" style={{ color: "var(--t4)" }}>No records found</p>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </motion.div>
     </div>
@@ -634,18 +568,18 @@ function DocumentsAndShare({ userRole, isHR }: { userRole: string; isHR: boolean
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MAIN PAGE COMPONENT — all existing logic + new widgets stitched in
+// MAIN PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter()
-  const [stats, setStats] = useState({
-    totalEmployees: 0, presentToday: 0, onLeave: 0, pendingRequests: 0,
-  })
+  const [stats, setStats] = useState({ totalEmployees: 0, presentToday: 0, onLeave: 0, pendingRequests: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [userRole,  setUserRole]  = useState("employee")
   const [userData,  setUserData]  = useState<any>(null)
 
-  // ── DATA — unchanged ──────────────────────────────────────────────────
+  // ── CHANGE 4: State to open/close the full NotificationPanel ─────────────
+  
+
   const recentActivities = [
     { id: 1, action: "New employee added",        user: "Sarah Johnson",  time: "2 hours ago", type: "success" },
     { id: 2, action: "Leave request approved",    user: "Mike Chen",      time: "4 hours ago", type: "info"    },
@@ -658,14 +592,13 @@ export default function DashboardPage() {
     { id: 3, title: "Quarterly Planning",  date: "Friday, 10:00 AM",  department: "Management",  icon: <Bell className="w-4 h-4" /> },
   ]
 
-  // ── FETCH — unchanged ─────────────────────────────────────────────────
   useEffect(() => {
     async function fetchDashboardData() {
       try {
         const savedRole = (sessionStorage.getItem("userRole") || "employee").toLowerCase()
         const email   = sessionStorage.getItem("userEmail") || localStorage.getItem("userEmail") || localStorage.getItem("rememberedEmail") || `${savedRole}@novapex.com`
         const company = sessionStorage.getItem("companyName") || localStorage.getItem("companyName") || localStorage.getItem("rememberedCompany") || "Novapex Systems"
-        const res = await fetch("/api/user", {
+        const res  = await fetch("/api/user", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, company }),
         })
@@ -687,7 +620,6 @@ export default function DashboardPage() {
   const isHR       = userRole === "hr"
   const isManager  = userRole === "manager"
 
-  // ── LOADING ───────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="min-h-screen p-8 flex items-center justify-center" style={{ backgroundColor: "var(--surface-0)" }}>
@@ -703,9 +635,12 @@ export default function DashboardPage() {
 
   return (
     <AuthGuard>
+      {/* ── CHANGE 4 cont: Render NotificationPanel at page root ── */}
+    
+
       <div className="space-y-8 pb-24 p-8 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000">
 
-        {/* ═══════════════════ HEADER — unchanged ═══════════════════ */}
+        {/* HEADER */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}
           className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
@@ -742,7 +677,7 @@ export default function DashboardPage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* ═══════════════════ STAT CARDS — unchanged ═══════════════ */}
+        {/* STAT CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { id: "s1", label: isHR ? "Workforce" : isManager ? "Direct Reports" : "Leave Balance",
@@ -754,7 +689,7 @@ export default function DashboardPage() {
             { id: "s3", label: "Off Duty Today", value: stats.onLeave,      accentColor: "var(--amber)", accentBg: "var(--amber-bg)", extra: "Scheduled Leaves" },
             { id: "s4", label: isHR ? "Gatekeeper" : isManager ? "Team Requests" : "Performance Index",
               value: isHR ? stats.pendingRequests : isManager ? `${stats.pendingRequests} Pending` : "9.2/10",
-              accentColor: (isHR || isManager) ? "var(--red)" : "var(--purple)",
+              accentColor: (isHR || isManager) ? "var(--red)"    : "var(--purple)",
               accentBg:    (isHR || isManager) ? "var(--red-bg)" : "var(--purple-bg)",
               icon: isEmployee ? <Target className="w-4 h-4" /> : <PieChart className="w-4 h-4" />,
               extra: isEmployee ? "Top 5% of Team" : "Action Required" },
@@ -798,19 +733,23 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* ═══════════════════ NEW: CELEBRATIONS STRIP ══════════════ */}
         <CelebrationsStrip />
 
-        {/* ═══════════════════ NEW: ANNOUNCEMENTS + THINGS TO DO + NOTIFICATIONS ═══ */}
+        {/* ANNOUNCEMENTS + THINGS TO DO + NOTIFICATIONS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1"><AnnouncementsPanel isHR={isHR} /></div>
           <div className="lg:col-span-1"><ThingsToDoPanel userRole={userRole} /></div>
-          <div className="lg:col-span-1"><NotificationsPanel userRole={userRole} /></div>
+          {/* Pass onViewAll callback to open the panel */}
+          <div className="lg:col-span-1">
+            <NotificationsPanel
+              userRole={userRole}
+              onViewAll={() => window.dispatchEvent(new Event("open-notifications"))}
+            />
+          </div>
         </div>
 
-        {/* ═══════════════════ ACTIVITY + MISSION BRIEFING — unchanged ═══════════ */}
+        {/* ACTIVITY + MISSION BRIEFING */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main panel */}
           <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
             className="lg:col-span-2 rounded-[36px] overflow-hidden"
             style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-md)" }}>
@@ -888,7 +827,6 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* Mission Briefing — Full Calendar button now navigates ── */}
           <motion.div
             className="rounded-[36px] p-8 text-white relative overflow-hidden shadow-2xl"
             style={{ background: "linear-gradient(135deg, #05101e 0%, #091827 60%, #05101e 100%)", border: "1px solid rgba(0,212,168,0.18)" }}
@@ -910,8 +848,6 @@ export default function DashboardPage() {
                 </div>
               ))}
             </div>
-
-            {/* Full Calendar — now a real navigation button ── */}
             <Link href="/calendar">
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                 className="w-full mt-10 py-4 rounded-2xl font-bold text-slate-900 relative z-10 text-center cursor-pointer"
@@ -919,20 +855,18 @@ export default function DashboardPage() {
                 Full Calendar →
               </motion.div>
             </Link>
-
             <div className="absolute -bottom-20 -right-20 w-64 h-64 rounded-full blur-[80px]" style={{ background: "rgba(0,212,168,0.08)" }} />
             <div className="absolute -top-10 -left-10 w-48 h-48 rounded-full blur-[60px]" style={{ background: "rgba(79,168,255,0.05)" }} />
           </motion.div>
         </div>
 
-        {/* ═══════════════════ NEW: DOCUMENTS + SHARE INFO ══════════ */}
         <DocumentsAndShare userRole={userRole} isHR={isHR} />
 
-        {/* ═══════════════════ COMMAND GATES — unchanged ════════════ */}
+        {/* COMMAND GATES */}
         <div className={`grid grid-cols-1 gap-8 ${isEmployee ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
           {[
-            { title: "Attendance",  href: "/attendance",          gradient: "from-teal-600 to-cyan-700",  glow: "rgba(0,212,168,0.25)", desc: "Clock-in & Logs",    roles: ["hr","manager","employee"] },
-            { title: "Performance", href: "/performance",         gradient: "from-blue-600 to-indigo-700", glow: "rgba(79,168,255,0.22)", desc: "KPIs & Reviews",    roles: ["hr","manager","employee"] },
+            { title: "Attendance",  href: "/attendance",   gradient: "from-teal-600 to-cyan-700",   glow: "rgba(0,212,168,0.25)", desc: "Clock-in & Logs",  roles: ["hr","manager","employee"] },
+            { title: "Performance", href: "/performance",  gradient: "from-blue-600 to-indigo-700", glow: "rgba(79,168,255,0.22)", desc: "KPIs & Reviews",  roles: ["hr","manager","employee"] },
             { title: isHR ? "Core Settings" : "Team Oversight",
               href:  isHR ? "/settings" : "/employees/profiles",
               gradient: "from-slate-700 to-slate-900", glow: "rgba(0,0,0,0.30)",
