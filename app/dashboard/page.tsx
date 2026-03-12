@@ -7,93 +7,178 @@ import {
   Zap, Target, Award, PieChart, CheckCircle2, Briefcase, Loader2,
   Megaphone, PartyPopper, ListTodo, Inbox, BookOpen, Share2,
   Gift, Star, Check, ChevronRight, X, Paperclip, BadgeCheck,
+  UserPlus, ClipboardList, BarChart2, Clock, Send,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import AuthGuard from "../../components/AuthGuard"
 import Chatbot from "../../components/ui/chatbot"
 
-// ── CHANGE 1: Import NotificationPanel ───────────────────────────────────────
-
-
 // ─────────────────────────────────────────────────────────────────────────────
 // MOCK DATA
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CELEBRATIONS = [
-  { id: 1, name: "Sarah Johnson", type: "birthday",     date: "Today",    avatar: "SJ", years: null },
-  { id: 2, name: "Mike Chen",     type: "anniversary",  date: "Today",    avatar: "MC", years: 3    },
-  { id: 3, name: "Alex Rodriguez",type: "birthday",     date: "Tomorrow", avatar: "AR", years: null },
-  { id: 4, name: "Priya Sharma",  type: "anniversary",  date: "Tomorrow", avatar: "PS", years: 5    },
+  { id: 1, name: "Sarah Johnson",  type: "birthday",    date: "Today",    avatar: "SJ", years: null },
+  { id: 2, name: "Mike Chen",      type: "anniversary", date: "Today",    avatar: "MC", years: 3    },
+  { id: 3, name: "Alex Rodriguez", type: "birthday",    date: "Tomorrow", avatar: "AR", years: null },
+  { id: 4, name: "Priya Sharma",   type: "anniversary", date: "Tomorrow", avatar: "PS", years: 5    },
 ]
 
 const ANNOUNCEMENTS = {
   ceo: [
-    { id: 1, title: "Q1 2025 — Record Growth 🚀",      body: "We achieved 23% YoY revenue growth in Q1. Every single team contributed to this milestone. Thank you!", time: "1 day ago",  priority: "high"   },
-    { id: 2, title: "Company Vision Update",             body: "Our 5-year roadmap has been refreshed. Full document available in the Documents section.",              time: "1 week ago", priority: "medium" },
+    { id: 1, title: "Q1 2025 — Record Growth 🚀",  body: "We achieved 23% YoY revenue growth in Q1. Every single team contributed to this milestone. Thank you!", time: "1 day ago",  priority: "high"   },
+    { id: 2, title: "Company Vision Update",         body: "Our 5-year roadmap has been refreshed. Full document available in the Documents section.",              time: "1 week ago", priority: "medium" },
   ],
   hr: [
-    { id: 1, title: "Updated Leave Policy 2025",         body: "Annual leave quota increased to 24 days effective Q2. Carry-forward rules also updated. Please review.",  time: "2 hours ago", priority: "high"   },
-    { id: 2, title: "New Health Insurance Provider",     body: "Starting April 1, BlueCross will be our primary health insurer. Enrollment closes March 25.",             time: "3 days ago",  priority: "medium" },
-    { id: 3, title: "Town Hall — March 28, 4 PM",        body: "Quarterly all-hands on Friday. Attendance is mandatory. Link shared on company email.",                   time: "5 days ago",  priority: "medium" },
+    { id: 1, title: "Updated Leave Policy 2025",     body: "Annual leave quota increased to 24 days effective Q2. Carry-forward rules also updated. Please review.",  time: "2 hours ago", priority: "high"   },
+    { id: 2, title: "New Health Insurance Provider", body: "Starting April 1, BlueCross will be our primary health insurer. Enrollment closes March 25.",             time: "3 days ago",  priority: "medium" },
+    { id: 3, title: "Town Hall — March 28, 4 PM",    body: "Quarterly all-hands on Friday. Attendance is mandatory. Link shared on company email.",                   time: "5 days ago",  priority: "medium" },
   ],
 }
 
 const THINGS_TO_DO: Record<string, Array<{ id: string; task: string; priority: "high"|"medium"|"low"; href: string }>> = {
   hr: [
-    { id: "t1", task: "Review 8 pending leave requests",     priority: "high",   href: "/attendance/leave-requests" },
-    { id: "t2", task: "Complete Q1 performance reviews",     priority: "high",   href: "/performance/reviews"       },
-    { id: "t3", task: "Update employee handbook (policy v3)",priority: "medium", href: "/dashboard/reports"         },
-    { id: "t4", task: "Schedule team-building event",        priority: "low",    href: "/calendar"                  },
-    { id: "t5", task: "Onboard 3 new Engineering hires",     priority: "medium", href: "/employees/add"             },
+    { id: "t1", task: "Review 8 pending leave requests",      priority: "high",   href: "/attendance/leave-requests" },
+    { id: "t2", task: "Complete Q1 performance reviews",      priority: "high",   href: "/performance/reviews"       },
+    { id: "t3", task: "Update employee handbook (policy v3)", priority: "medium", href: "/dashboard/reports"         },
+    { id: "t4", task: "Schedule team-building event",         priority: "low",    href: "/calendar"                  },
+    { id: "t5", task: "Onboard 3 new Engineering hires",      priority: "medium", href: "/employees/add"             },
   ],
   manager: [
-    { id: "t1", task: "Approve 4 leave requests from team",  priority: "high",   href: "/attendance/leave-requests" },
-    { id: "t2", task: "Submit reviews for 3 team members",   priority: "high",   href: "/performance/reviews"       },
-    { id: "t3", task: "1:1 sync with junior engineers",      priority: "medium", href: "/calendar"                  },
-    { id: "t4", task: "Update team goals for Q2",            priority: "medium", href: "/performance/goals"         },
+    { id: "t1", task: "Approve 4 leave requests from team",   priority: "high",   href: "/attendance/leave-requests" },
+    { id: "t2", task: "Submit reviews for 3 team members",    priority: "high",   href: "/performance/reviews"       },
+    { id: "t3", task: "1:1 sync with junior engineers",       priority: "medium", href: "/calendar"                  },
+    { id: "t4", task: "Update team goals for Q2",             priority: "medium", href: "/performance/goals"         },
   ],
   employee: [
-    { id: "t1", task: "Submit leave request for April 10",   priority: "medium", href: "/attendance/leave-requests" },
-    { id: "t2", task: "Complete React Certification module", priority: "medium", href: "/courses/engineering"       },
-    { id: "t3", task: "Update your profile & skills",        priority: "low",    href: "/employees/profiles"        },
-    { id: "t4", task: "Submit Q1 self-appraisal form",       priority: "high",   href: "/performance/feedback"      },
+    { id: "t1", task: "Submit leave request for April 10",    priority: "medium", href: "/attendance/leave-requests" },
+    { id: "t2", task: "Complete React Certification module",  priority: "medium", href: "/courses/engineering"       },
+    { id: "t3", task: "Update your profile & skills",         priority: "low",    href: "/employees/profiles"        },
+    { id: "t4", task: "Submit Q1 self-appraisal form",        priority: "high",   href: "/performance/feedback"      },
   ],
 }
 
 const NOTIFICATIONS_DATA = [
-  { id: "n1", title: "Leave request approved",       desc: "Your 3-day leave (April 10–12) has been approved.",      time: "1 hour ago",  read: false, type: "success" },
-  { id: "n2", title: "Performance review due",       desc: "Your Q1 self-review is due by March 31.",                time: "5 hours ago", read: false, type: "warning" },
-  { id: "n3", title: "New HR announcement",          desc: "Updated Leave Policy 2025 posted by HR Team.",           time: "1 day ago",   read: true,  type: "info"    },
-  { id: "n4", title: "Team meeting reminder",        desc: "Engineering stand-up in 30 minutes.",                    time: "2 days ago",  read: true,  type: "info"    },
+  { id: "n1", title: "Leave request approved",  desc: "Your 3-day leave (April 10–12) has been approved.",    time: "1 hour ago",  read: false, type: "success" },
+  { id: "n2", title: "Performance review due",  desc: "Your Q1 self-review is due by March 31.",              time: "5 hours ago", read: false, type: "warning" },
+  { id: "n3", title: "New HR announcement",     desc: "Updated Leave Policy 2025 posted by HR Team.",         time: "1 day ago",   read: true,  type: "info"    },
+  { id: "n4", title: "Team meeting reminder",   desc: "Engineering stand-up in 30 minutes.",                  time: "2 days ago",  read: true,  type: "info"    },
 ]
 
 const APPROVALS_DATA = [
-  { id: "a1", name: "Riya Patel",    type: "Annual Leave",   days: 3, dates: "Apr 10–12", dept: "Engineering",  status: "pending" },
-  { id: "a2", name: "James Liu",     type: "Sick Leave",     days: 1, dates: "Apr 3",     dept: "Marketing",    status: "pending" },
-  { id: "a3", name: "Noor Al-Amin",  type: "Personal Leave", days: 2, dates: "Apr 15–16", dept: "Sales",        status: "pending" },
-  { id: "a4", name: "Tom Eriksson",  type: "Annual Leave",   days: 5, dates: "Apr 20–24", dept: "Engineering",  status: "pending" },
+  { id: "a1", name: "Riya Patel",   type: "Annual Leave",   days: 3, dates: "Apr 10–12", dept: "Engineering", status: "pending" },
+  { id: "a2", name: "James Liu",    type: "Sick Leave",     days: 1, dates: "Apr 3",     dept: "Marketing",   status: "pending" },
+  { id: "a3", name: "Noor Al-Amin", type: "Personal Leave", days: 2, dates: "Apr 15–16", dept: "Sales",       status: "pending" },
+  { id: "a4", name: "Tom Eriksson", type: "Annual Leave",   days: 5, dates: "Apr 20–24", dept: "Engineering", status: "pending" },
 ]
 
 const DOCUMENTS: Record<string, Array<{ id: string; title: string; meta: string; href: string }>> = {
   hr: [
-    { id: "d1", title: "Leave Policy 2025",          meta: "PDF · 1.2 MB",  href: "/dashboard/reports" },
-    { id: "d2", title: "Employee Handbook v3",       meta: "PDF · 3.4 MB",  href: "/dashboard/reports" },
-    { id: "d3", title: "Payroll Structure",          meta: "XLSX · 800 KB", href: "/employees/payroll" },
-    { id: "d4", title: "Designation Structure",      meta: "PDF · 500 KB",  href: "/dashboard/reports" },
-    { id: "d5", title: "Insurance Announcement",     meta: "PDF · 450 KB",  href: "/dashboard/reports" },
+    { id: "d1", title: "Leave Policy 2025",      meta: "PDF · 1.2 MB",  href: "/dashboard/reports" },
+    { id: "d2", title: "Employee Handbook v3",   meta: "PDF · 3.4 MB",  href: "/dashboard/reports" },
+    { id: "d3", title: "Payroll Structure",      meta: "XLSX · 800 KB", href: "/employees/payroll" },
+    { id: "d4", title: "Designation Structure",  meta: "PDF · 500 KB",  href: "/dashboard/reports" },
+    { id: "d5", title: "Insurance Announcement", meta: "PDF · 450 KB",  href: "/dashboard/reports" },
   ],
   manager: [
-    { id: "d1", title: "Leave Policy 2025",          meta: "PDF · 1.2 MB",  href: "/dashboard/reports" },
-    { id: "d2", title: "Employee Handbook v3",       meta: "PDF · 3.4 MB",  href: "/dashboard/reports" },
-    { id: "d4", title: "Designation Structure",      meta: "PDF · 500 KB",  href: "/dashboard/reports" },
-    { id: "d5", title: "Insurance Announcement",     meta: "PDF · 450 KB",  href: "/dashboard/reports" },
+    { id: "d1", title: "Leave Policy 2025",      meta: "PDF · 1.2 MB",  href: "/dashboard/reports" },
+    { id: "d2", title: "Employee Handbook v3",   meta: "PDF · 3.4 MB",  href: "/dashboard/reports" },
+    { id: "d4", title: "Designation Structure",  meta: "PDF · 500 KB",  href: "/dashboard/reports" },
+    { id: "d5", title: "Insurance Announcement", meta: "PDF · 450 KB",  href: "/dashboard/reports" },
   ],
   employee: [
-    { id: "d1", title: "Leave Policy 2025",          meta: "PDF · 1.2 MB",  href: "/dashboard/reports" },
-    { id: "d2", title: "Employee Handbook v3",       meta: "PDF · 3.4 MB",  href: "/dashboard/reports" },
-    { id: "d5", title: "Insurance Announcement",     meta: "PDF · 450 KB",  href: "/dashboard/reports" },
+    { id: "d1", title: "Leave Policy 2025",      meta: "PDF · 1.2 MB",  href: "/dashboard/reports" },
+    { id: "d2", title: "Employee Handbook v3",   meta: "PDF · 3.4 MB",  href: "/dashboard/reports" },
+    { id: "d5", title: "Insurance Announcement", meta: "PDF · 450 KB",  href: "/dashboard/reports" },
   ],
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QUICK ACTIONS BAR  ← replaces the 4 stat cards
+// ─────────────────────────────────────────────────────────────────────────────
+const QUICK_ACTIONS: Record<string, Array<{ label: string; icon: React.ElementType; href: string; color: string; bg: string }>> = {
+  hr: [
+    { label: "Add Employee",   icon: UserPlus,      href: "/employees/add",             color: "var(--blue)",   bg: "var(--blue-bg)"   },
+    { label: "Leave Requests", icon: ClipboardList, href: "/attendance/leave-requests", color: "var(--amber)",  bg: "var(--amber-bg)"  },
+    { label: "Run Reports",    icon: BarChart2,      href: "/dashboard/reports",         color: "var(--accent)", bg: "var(--accent-bg)" },
+    { label: "Performance",    icon: TrendingUp,    href: "/performance",               color: "var(--green)",  bg: "var(--green-bg)"  },
+    { label: "Shift Schedule", icon: Clock,         href: "/attendance/shift_shedule",  color: "var(--purple)", bg: "var(--purple-bg)" },
+    { label: "Calendar",       icon: Calendar,      href: "/calendar",                  color: "var(--blue)",   bg: "var(--blue-bg)"   },
+  ],
+  manager: [
+    { label: "Leave Requests", icon: ClipboardList, href: "/attendance/leave-requests", color: "var(--amber)",  bg: "var(--amber-bg)"  },
+    { label: "Team Goals",     icon: Target,        href: "/performance/goals",         color: "var(--accent)", bg: "var(--accent-bg)" },
+    { label: "Performance",    icon: TrendingUp,    href: "/performance",               color: "var(--blue)",   bg: "var(--blue-bg)"   },
+    { label: "Calendar",       icon: Calendar,      href: "/calendar",                  color: "var(--green)",  bg: "var(--green-bg)"  },
+    { label: "Team Members",   icon: Users,         href: "/employees/profiles",        color: "var(--purple)", bg: "var(--purple-bg)" },
+    { label: "Shift Schedule", icon: Clock,         href: "/attendance/shift_shedule",  color: "var(--blue)",   bg: "var(--blue-bg)"   },
+  ],
+  employee: [
+    { label: "Apply Leave",    icon: Send,          href: "/attendance/leave-requests", color: "var(--green)",  bg: "var(--green-bg)"  },
+    { label: "My Goals",       icon: Target,        href: "/performance/goals",         color: "var(--accent)", bg: "var(--accent-bg)" },
+    { label: "My Attendance",  icon: Clock,         href: "/attendance/time-tracking",  color: "var(--blue)",   bg: "var(--blue-bg)"   },
+    { label: "Courses",        icon: BookOpen,      href: "/courses",                   color: "var(--amber)",  bg: "var(--amber-bg)"  },
+    { label: "Calendar",       icon: Calendar,      href: "/calendar",                  color: "var(--purple)", bg: "var(--purple-bg)" },
+    { label: "My Profile",     icon: Briefcase,     href: "/employees/profiles",        color: "var(--blue)",   bg: "var(--blue-bg)"   },
+  ],
+}
+
+function QuickActionsBar({ userRole }: { userRole: string }) {
+  const actions = QUICK_ACTIONS[userRole] ?? QUICK_ACTIONS.employee
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.15 }}
+      className="rounded-[22px] overflow-hidden"
+      style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
+
+      {/* Label strip */}
+      <div className="px-6 py-3 flex items-center gap-2.5"
+        style={{ background: "var(--surface-2)", borderBottom: "1px solid var(--b1)" }}>
+        <div className="p-1.5 rounded-lg" style={{ background: "var(--accent-bg)" }}>
+          <Zap className="w-3.5 h-3.5 fill-current" style={{ color: "var(--accent)" }} />
+        </div>
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--t3)" }}>
+          Quick Actions
+        </p>
+      </div>
+
+      {/* 6 action buttons in a single row */}
+      <div className="grid grid-cols-3 sm:grid-cols-6">
+        {actions.map((action, i) => {
+          const Icon = action.icon
+          return (
+            <Link key={action.label} href={action.href}>
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + i * 0.05 }}
+                className="flex flex-col items-center gap-2.5 py-5 px-3 cursor-pointer group relative transition-colors"
+                style={{ borderRight: i < actions.length - 1 ? "1px solid var(--b1)" : "none" }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "var(--surface-2)"}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = "transparent"}>
+                {/* Icon */}
+                <div className="w-10 h-10 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110"
+                  style={{ background: action.bg }}>
+                  <Icon style={{ color: action.color, width: 18, height: 18 }} />
+                </div>
+                {/* Label */}
+                <span className="text-[10px] font-bold text-center leading-tight"
+                  style={{ color: "var(--t3)" }}>
+                  {action.label}
+                </span>
+                {/* Accent underline on hover */}
+                <div className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ background: action.color }} />
+              </motion.div>
+            </Link>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -317,7 +402,6 @@ function ThingsToDoPanel({ userRole }: { userRole: string }) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // NOTIFICATIONS + APPROVALS PANEL
-// ── CHANGE 2: Accept onViewAll callback prop ──────────────────────────────────
 // ─────────────────────────────────────────────────────────────────────────────
 function NotificationsPanel({ userRole, onViewAll }: { userRole: string; onViewAll: () => void }) {
   const [tab,       setTab]      = useState<"notifications"|"approvals">("notifications")
@@ -335,7 +419,6 @@ function NotificationsPanel({ userRole, onViewAll }: { userRole: string; onViewA
       className="rounded-[22px] overflow-hidden h-full"
       style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}>
 
-      {/* Tabs */}
       <div className="flex" style={{ borderBottom: "1px solid var(--b1)", background: "var(--surface-2)" }}>
         {[
           { key: "notifications", label: "Notifications", badge: unread },
@@ -359,7 +442,6 @@ function NotificationsPanel({ userRole, onViewAll }: { userRole: string; onViewA
         ))}
       </div>
 
-      {/* Content */}
       <div className="overflow-y-auto" style={{ maxHeight: "320px" }}>
         <AnimatePresence mode="wait">
           {tab === "notifications" ? (
@@ -429,7 +511,6 @@ function NotificationsPanel({ userRole, onViewAll }: { userRole: string; onViewA
         </AnimatePresence>
       </div>
 
-      {/* ── CHANGE 3: Footer — button calls onViewAll instead of Link to leave-requests ── */}
       <div className="px-5 py-3" style={{ borderTop: "1px solid var(--b1)", background: "var(--surface-2)" }}>
         {tab === "notifications" ? (
           <button onClick={onViewAll}
@@ -545,8 +626,8 @@ function DocumentsAndShare({ userRole, isHR }: { userRole: string; isHR: boolean
           <div className="mt-4 space-y-2">
             <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--t4)" }}>Recent</p>
             {[
-              { user: "HR Team",      msg: "Q1 appraisal forms are now open.",        time: "2h ago" },
-              { user: "John Manager", msg: "Engineering sprint #14 starts Monday.",   time: "1d ago" },
+              { user: "HR Team",      msg: "Q1 appraisal forms are now open.",       time: "2h ago" },
+              { user: "John Manager", msg: "Engineering sprint #14 starts Monday.",  time: "1d ago" },
             ].map((item, i) => (
               <div key={i} className="px-3 py-2.5 rounded-[14px] flex gap-3"
                 style={{ background: "var(--surface-2)" }}>
@@ -572,13 +653,9 @@ function DocumentsAndShare({ userRole, isHR }: { userRole: string; isHR: boolean
 // ─────────────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter()
-  const [stats, setStats] = useState({ totalEmployees: 0, presentToday: 0, onLeave: 0, pendingRequests: 0 })
   const [isLoading, setIsLoading] = useState(true)
   const [userRole,  setUserRole]  = useState("employee")
   const [userData,  setUserData]  = useState<any>(null)
-
-  // ── CHANGE 4: State to open/close the full NotificationPanel ─────────────
-  
 
   const recentActivities = [
     { id: 1, action: "New employee added",        user: "Sarah Johnson",  time: "2 hours ago", type: "success" },
@@ -587,9 +664,9 @@ export default function DashboardPage() {
     { id: 4, action: "Performance review due",    user: "Alex Rodriguez", time: "2 days ago",  type: "warning" },
   ]
   const upcomingEvents = [
-    { id: 1, title: "Team Meeting",        date: "Today, 2:00 PM",    department: "Engineering", icon: <Calendar className="w-4 h-4" /> },
-    { id: 2, title: "Performance Reviews", date: "Tomorrow, 9:00 AM", department: "HR",          icon: <TrendingUp className="w-4 h-4" /> },
-    { id: 3, title: "Quarterly Planning",  date: "Friday, 10:00 AM",  department: "Management",  icon: <Bell className="w-4 h-4" /> },
+    { id: 1, title: "Team Meeting",        date: "Today, 2:00 PM",    icon: <Calendar className="w-4 h-4" /> },
+    { id: 2, title: "Performance Reviews", date: "Tomorrow, 9:00 AM", icon: <TrendingUp className="w-4 h-4" /> },
+    { id: 3, title: "Quarterly Planning",  date: "Friday, 10:00 AM",  icon: <Bell className="w-4 h-4" /> },
   ]
 
   useEffect(() => {
@@ -607,9 +684,6 @@ export default function DashboardPage() {
         setUserData(data)
         const role = (data.role || savedRole).toLowerCase()
         setUserRole(role)
-        if      (role === "hr")      setStats({ totalEmployees: 247, presentToday: 198, onLeave: 12, pendingRequests: 8 })
-        else if (role === "manager") setStats({ totalEmployees: 12,  presentToday: 10,  onLeave: 1,  pendingRequests: 4 })
-        else                         setStats({ totalEmployees: 0,   presentToday: 0,   onLeave: 0,  pendingRequests: 0 })
       } catch (e) { console.error("Dashboard Sync Error:", e) }
       finally { setIsLoading(false) }
     }
@@ -635,9 +709,6 @@ export default function DashboardPage() {
 
   return (
     <AuthGuard>
-      {/* ── CHANGE 4 cont: Render NotificationPanel at page root ── */}
-    
-
       <div className="space-y-8 pb-24 p-8 max-w-7xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-1000">
 
         {/* HEADER */}
@@ -677,61 +748,8 @@ export default function DashboardPage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* STAT CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            { id: "s1", label: isHR ? "Workforce" : isManager ? "Direct Reports" : "Leave Balance",
-              value: isHR ? stats.totalEmployees : isManager ? `${stats.totalEmployees} Members` : "24 Days",
-              accentColor: "var(--blue)", accentBg: "var(--blue-bg)",
-              icon: isEmployee ? <Calendar className="w-4 h-4" /> : <Users className="w-4 h-4" />,
-              extra: isHR ? "+12 New Hires" : isManager ? `Dept: ${userData?.dept || "Engineering"}` : "Current Year" },
-            { id: "s2", label: "Active Pulse",   value: stats.presentToday, accentColor: "var(--green)", accentBg: "var(--green-bg)", progress: true },
-            { id: "s3", label: "Off Duty Today", value: stats.onLeave,      accentColor: "var(--amber)", accentBg: "var(--amber-bg)", extra: "Scheduled Leaves" },
-            { id: "s4", label: isHR ? "Gatekeeper" : isManager ? "Team Requests" : "Performance Index",
-              value: isHR ? stats.pendingRequests : isManager ? `${stats.pendingRequests} Pending` : "9.2/10",
-              accentColor: (isHR || isManager) ? "var(--red)"    : "var(--purple)",
-              accentBg:    (isHR || isManager) ? "var(--red-bg)" : "var(--purple-bg)",
-              icon: isEmployee ? <Target className="w-4 h-4" /> : <PieChart className="w-4 h-4" />,
-              extra: isEmployee ? "Top 5% of Team" : "Action Required" },
-          ].map((stat, i) => (
-            <motion.div key={stat.id}
-              initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="group p-7 rounded-[28px] cursor-default transition-all duration-300"
-              style={{ background: "var(--surface-1)", border: "1px solid var(--b1)", boxShadow: "var(--sh-sm)" }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.boxShadow = "var(--sh-md)"}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.boxShadow = "var(--sh-sm)"}>
-              <div className="flex justify-between items-start mb-4">
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: "var(--t4)" }}>{stat.label}</p>
-                <div className="p-2 rounded-xl" style={{ background: stat.accentBg, color: stat.accentColor }}>
-                  {(stat as any).icon || <TrendingUp className="w-4 h-4" />}
-                </div>
-              </div>
-              <div className="text-4xl font-bold tracking-tight" style={{ color: stat.accentColor, letterSpacing: "-0.04em" }}>
-                {stat.value}
-              </div>
-              {(stat as any).progress ? (
-                <div className="mt-6">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--green)" }}>Efficiency</span>
-                    <span className="text-[10px] font-bold" style={{ color: "var(--t4)" }}>82%</span>
-                  </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surface-3)" }}>
-                    <motion.div className="h-full rounded-full" style={{ background: "var(--green)" }}
-                      initial={{ width: 0 }} animate={{ width: "82%" }} transition={{ duration: 1.2, ease: "circOut", delay: 0.3 }} />
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-6">
-                  <span className="px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest"
-                    style={{ background: stat.accentBg, color: stat.accentColor }}>
-                    {(stat as any).extra}
-                  </span>
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
+        {/* ── QUICK ACTIONS (replaces the 4 stat cards) ── */}
+        <QuickActionsBar userRole={userRole} />
 
         <CelebrationsStrip />
 
@@ -739,7 +757,6 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1"><AnnouncementsPanel isHR={isHR} /></div>
           <div className="lg:col-span-1"><ThingsToDoPanel userRole={userRole} /></div>
-          {/* Pass onViewAll callback to open the panel */}
           <div className="lg:col-span-1">
             <NotificationsPanel
               userRole={userRole}
@@ -865,8 +882,8 @@ export default function DashboardPage() {
         {/* COMMAND GATES */}
         <div className={`grid grid-cols-1 gap-8 ${isEmployee ? "md:grid-cols-2" : "md:grid-cols-3"}`}>
           {[
-            { title: "Attendance",  href: "/attendance",   gradient: "from-teal-600 to-cyan-700",   glow: "rgba(0,212,168,0.25)", desc: "Clock-in & Logs",  roles: ["hr","manager","employee"] },
-            { title: "Performance", href: "/performance",  gradient: "from-blue-600 to-indigo-700", glow: "rgba(79,168,255,0.22)", desc: "KPIs & Reviews",  roles: ["hr","manager","employee"] },
+            { title: "Attendance",  href: "/attendance",  gradient: "from-teal-600 to-cyan-700",   glow: "rgba(0,212,168,0.25)", desc: "Clock-in & Logs", roles: ["hr","manager","employee"] },
+            { title: "Performance", href: "/performance", gradient: "from-blue-600 to-indigo-700", glow: "rgba(79,168,255,0.22)", desc: "KPIs & Reviews",  roles: ["hr","manager","employee"] },
             { title: isHR ? "Core Settings" : "Team Oversight",
               href:  isHR ? "/settings" : "/employees/profiles",
               gradient: "from-slate-700 to-slate-900", glow: "rgba(0,0,0,0.30)",
